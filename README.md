@@ -1,3 +1,5 @@
+[![CI](https://github.com/VloRyan/protrakgon/actions/workflows/ci.workflow.yml/badge.svg)](https://github.com/VloRyan/protrakgon/actions/workflows/ci.workflow.yml)
+
 # ProTrakGoN
 
 **PROject TRAcK GO + N** – Time tracking for client projects  
