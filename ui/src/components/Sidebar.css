@@ -1,0 +1,15 @@
+#sidebar {
+  padding-top: 1rem !important;
+}
+
+#sidebar ul li a {
+  text-decoration: none;
+}
+
+#sidebar ul li:hover {
+  background-color: var(--bs-secondary-bg);
+}
+
+#sidebar ul li a.active {
+  color: var(--bs-light-text-emphasis) !important;
+}
