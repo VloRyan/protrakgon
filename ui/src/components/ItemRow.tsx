@@ -43,7 +43,7 @@ export const ItemActionCol = ({
   const { addApiErrorAlerts } = useAlert();
   const queryClient = useQueryClient();
   return (
-    <Col className="col-auto d-flex justify-content-end">
+    <Col className="pe-0 d-flex justify-content-end">
       {Children.map(children, (child) => (
         <div className="me-1">{child}</div>
       ))}

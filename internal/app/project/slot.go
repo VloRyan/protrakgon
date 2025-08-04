@@ -50,14 +50,14 @@ func (p *Slot) GetIdentifier() *jsonapi.ResourceIdentifierObject {
 }
 
 type SlotFilter struct {
-	ProjectID           *int            `form:"filter[projectID]"`
-	Activity            *Activity       `form:"filter[activity]"`
-	StartTime           *time.Time      `form:"filter[startTime]"`
-	StartTimeComparator CompareOperator `form:"filter[startTimeComparator]"`
-	EndTime             *time.Time      `form:"filter[endTime]"`
-	EndTimeComparator   CompareOperator `form:"filter[endTimeComparator]"`
-	IsOpen              *bool           `form:"filter[isOpen]"`
-	Description         *string         `form:"filter[description]"`
+	ProjectID       *int            `form:"filter[projectID]"`
+	Activity        *Activity       `form:"filter[activity]"`
+	From            *time.Time      `form:"filter[from]" time_format:"2006-01-02" time_utc:"true"`
+	FromComparator  CompareOperator `form:"filter[fromComparator]"`
+	Until           *time.Time      `form:"filter[until]" time_format:"2006-01-02" time_utc:"true"`
+	UntilComparator CompareOperator `form:"filter[untilComparator]"`
+	IsOpen          *bool           `form:"filter[isOpen]"`
+	Description     *string         `form:"filter[description]"`
 }
 
 type CompareOperator int
@@ -72,8 +72,9 @@ const (
 )
 
 var (
-	ErrOpenSlotExists      = errors.New("open slot exists")
-	ErrSlotEndsBeforeStart = errors.New("slot ends before start")
+	ErrOpenSlotExists         = errors.New("open slot exists")
+	ErrSlotEndsBeforeStart    = errors.New("slot ends before start")
+	ErrSlotEndsOnDifferentDay = errors.New("slot ends on different day")
 )
 
 type SlotService interface {
@@ -111,8 +112,11 @@ func (s *slotService) Save(tx db.Transaction, slot *Slot) error {
 	} else {
 		newEnd := slot.End.UTC().Truncate(time.Minute)
 		slot.End = &newEnd
-		if slot.End != nil && slot.Start.After(*slot.End) {
+		if slot.Start.After(*slot.End) {
 			return ErrSlotEndsBeforeStart
+		}
+		if slot.Start.Truncate(24*time.Hour) != newEnd.Truncate(24*time.Hour) {
+			return ErrSlotEndsOnDifferentDay
 		}
 	}
 	return s.slotRepo.Save(tx, slot)
@@ -210,7 +214,7 @@ func (r *SlotRepository) GetByID(tx db.Transaction, id int) (*Slot, error) {
 func (r *SlotRepository) GetAll(tx db.Transaction, page *pagination.Page, filter *SlotFilter) ([]*Slot, error) {
 	projects := make([]*Slot, 0, 10)
 	stmt := `SELECT id, project_id, activity, started_at, ended_at, description
-             FROM slot`
+               FROM slot`
 	countStmt := `SELECT COUNT(*) AS total_count 
 				    FROM slot`
 
@@ -254,13 +258,13 @@ func (r *SlotRepository) GetAll(tx db.Transaction, page *pagination.Page, filter
 		stmt += "\nORDER BY " + strings.Join(orderArgs, ", ")
 	}
 
-	if page.Offset != 0 {
-		stmt += "\nOFFSET :offset"
-		selectParams["offset"] = page.Offset
-	}
 	if page.Limit != -1 {
 		stmt += "\nLIMIT :limit"
 		selectParams["limit"] = page.Limit
+		if page.Offset != 0 {
+			stmt += "\nOFFSET :offset"
+			selectParams["offset"] = page.Offset * page.Limit
+		}
 	}
 	if len(whereParams) > 0 {
 		if err := tx.Select(page, countStmt, whereParams); err != nil {
@@ -280,8 +284,8 @@ func (r *SlotRepository) GetAll(tx db.Transaction, page *pagination.Page, filter
 
 func (r *SlotRepository) Delete(tx db.Transaction, id int) error {
 	stmt := `DELETE 
-             FROM slot
-             WHERE id = :id`
+               FROM slot
+              WHERE id = :id`
 
 	result, err := tx.Exec(stmt, map[string]interface{}{"id": id})
 	if err != nil {
@@ -309,26 +313,26 @@ func (r *SlotRepository) toWhereClause(filter *SlotFilter) (string, map[string]a
 		m["activity"] = *filter.Activity
 		parts = append(parts, "activity = :activity")
 	}
-	if filter.StartTime != nil {
-		m["startTime"] = *filter.StartTime
-		switch filter.StartTimeComparator {
+	if filter.From != nil {
+		m["startTime"] = *filter.From
+		switch filter.FromComparator {
 		case CompareOperatorEqual:
-			parts = append(parts, "started_at = :startTime")
+			parts = append(parts, "date(started_at) = date(:startTime)")
 		case CompareOperatorNotEqual:
-			parts = append(parts, "started_at <> :startTime")
+			parts = append(parts, "date(started_at) <> date(:startTime)")
 		case CompareOperatorLessThan:
-			parts = append(parts, "started_at < :startTime")
+			parts = append(parts, "date(started_at) < date(:startTime)")
 		case CompareOperatorLessThanOrEqual:
-			parts = append(parts, "started_at >= :startTime")
+			parts = append(parts, "date(started_at) <= date(:startTime)")
 		case CompareOperatorGreaterThan:
-			parts = append(parts, "started_at > :startTime")
+			parts = append(parts, "date(started_at) > date(:startTime)")
 		case CompareOperatorGreaterThanOrEqual:
-			parts = append(parts, "started_at >= :startTime")
+			parts = append(parts, "date(started_at) >= date(:startTime)")
 		}
 	}
-	if filter.EndTime != nil {
-		m["endTime"] = *filter.EndTime
-		switch filter.EndTimeComparator {
+	if filter.Until != nil {
+		m["endTime"] = *filter.Until
+		switch filter.UntilComparator {
 		case CompareOperatorEqual:
 			parts = append(parts, "ended_at = :endTime")
 		case CompareOperatorNotEqual:
@@ -336,7 +340,7 @@ func (r *SlotRepository) toWhereClause(filter *SlotFilter) (string, map[string]a
 		case CompareOperatorLessThan:
 			parts = append(parts, "ended_at < :endTime")
 		case CompareOperatorLessThanOrEqual:
-			parts = append(parts, "ended_at >= :endTime")
+			parts = append(parts, "ended_at <= :endTime")
 		case CompareOperatorGreaterThan:
 			parts = append(parts, "ended_at > :endTime")
 		case CompareOperatorGreaterThanOrEqual:

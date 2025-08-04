@@ -14,7 +14,7 @@ import { JSX, ReactElement, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
-import { useFilter } from "ts-jsonapi-form/hooks/UseFilter.ts";
+import { extractFilter } from "ts-jsonapi-form/jsonapi/Request.ts";
 import {
   ObjectForm,
   SingleObjectForm,
@@ -32,8 +32,8 @@ export interface ToolbarProps {
 }
 
 export function Toolbar(props: ToolbarProps) {
-  const filter = useFilter();
   const searchString = useSearch();
+  const filter = extractFilter(searchString);
   const [location, setLocation] = useLocation();
   const searchFieldRef = useRef<HTMLInputElement>(null);
   const [showSearchBar, setShowSearchBar] = useState(false);

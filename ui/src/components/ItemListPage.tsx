@@ -29,7 +29,7 @@ export const ItemListPage = ({
   searchBarContent,
 }: PropsWithChildren<ItemListPageProps>) => {
   const [location] = useLocation();
-  const url = joinPath(SERVER_API_PATH, `/v1/`, location);
+  const resourcesUrl = joinPath(SERVER_API_PATH, `/v1/`, location);
   return (
     <>
       <Toolbar
@@ -37,7 +37,12 @@ export const ItemListPage = ({
         searchProperty={searchProperty}
         searchBarContent={searchBarContent}
       ></Toolbar>
-      <ItemList url={url} itemCellsFunc={itemCellsFunc} opts={opts} />
+      <ItemList
+        resourcesUrl={resourcesUrl}
+        locationUrl={location}
+        itemCellsFunc={itemCellsFunc}
+        opts={opts}
+      />
     </>
   );
 };

@@ -3,9 +3,11 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Menu, MenuItem, Sidebar } from "./components/Sidebar.tsx";
 import { useEffect } from "react";
 import {
+  faBriefcase,
   faClock,
   faDiagramProject,
   faListUl,
+  faMugHot,
   faPeopleGroup,
   faPerson,
 } from "@fortawesome/free-solid-svg-icons";
@@ -27,6 +29,8 @@ const typeIcons = new Map<string, IconDefinition>([
   ["projects", faListUl],
   ["project", faDiagramProject],
   ["project/slot", faClock],
+  ["activity/work", faBriefcase],
+  ["activity/break", faMugHot],
 ]);
 
 const sidebarMenu: Menu[] = [

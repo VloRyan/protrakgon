@@ -3,6 +3,7 @@ import { Alert, AlertContext } from "../components/context/AlertContext.tsx";
 import { ApiError } from "ts-jsonapi-form/jsonapi/model/ApiError.ts";
 import { useLocation } from "wouter";
 import { ResourceObject } from "ts-jsonapi-form/jsonapi/model/Objects.ts";
+import { SubmitResponseHandler } from "./UseResourceObjectForm.ts";
 
 const ALERT_FADE_TIME_SUCCESS = 1000;
 const ALERT_FADE_TIME = 5000;
@@ -73,5 +74,5 @@ export const useAlertSubmitResponseHandler = () => {
     onSubmitError: function (error: Error): void {
       addApiErrorAlerts(error);
     },
-  };
+  } satisfies SubmitResponseHandler;
 };

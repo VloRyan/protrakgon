@@ -28,3 +28,7 @@ clean-server:
 
 clean-ui:
 	rm -fr ./ui/dist
+
+docker:
+	docker build -t protrakgon:latest .
+	docker save -o bin/protrakgon.tar protrakgon:latest

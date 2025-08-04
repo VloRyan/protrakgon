@@ -33,4 +33,5 @@ export interface LabeledFormFieldPropsWithOnChange<T>
   extends LabeledFormFieldProps<T> {
   onChange?: (e: ChangeEvent<FormControlElement>) => void;
   disabled?: boolean;
+  required?: boolean;
 }

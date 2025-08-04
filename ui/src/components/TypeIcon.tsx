@@ -5,6 +5,7 @@ import { resolveIcon } from "../Icons.ts";
 interface TypeIconProps {
   type: string;
   className?: string;
+  title?: string;
 }
 
 export function TypeIcon(props: TypeIconProps) {
@@ -15,7 +16,7 @@ export function TypeIcon(props: TypeIconProps) {
   return (
     <FontAwesomeIcon
       icon={icon}
-      title={props.type}
+      title={props.title ? props.title : props.type}
       className={props.className}
     ></FontAwesomeIcon>
   );

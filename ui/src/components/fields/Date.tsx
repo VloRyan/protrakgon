@@ -1,6 +1,6 @@
 import { Form } from "react-bootstrap";
 
-import { JSX } from "react";
+import { JSX, useState } from "react";
 
 import { LabeledFormFieldPropsWithOnChange, LabeledGroup } from "./Label.tsx";
 
@@ -10,23 +10,30 @@ export function DateField({
   label,
   md,
   onChange,
+  required,
 }: LabeledFormFieldPropsWithOnChange<string>): JSX.Element {
+  const [invalid, setInvalid] = useState(false);
   const value = defaultValue ? new Date(defaultValue) : undefined;
   return (
     <LabeledGroup label={label} md={md}>
       <Form.Control
         name={name}
+        required={required}
         type="date"
-        defaultValue={value ? value.toISOString().substring(0, 10) : ""}
+        isInvalid={invalid}
+        defaultValue={value ? value.toISOString().substring(0, 10) : undefined}
         onChange={(event) => {
           const target = event.currentTarget as HTMLInputElement;
+          if (required) {
+            setInvalid(!target.value);
+          }
           const newEvent = {
             ...event,
             currentTarget: {
               ...target,
               name: target.name,
               type: target.type,
-              value: target.value + "T00:00:00Z",
+              value: target.value ? target.value : "",
             },
           };
           if (onChange) {
