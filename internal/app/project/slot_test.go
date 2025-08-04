@@ -22,6 +22,7 @@ var (
 		Start:     testhelper.FixedNow.Truncate(time.Minute),
 	}
 )
+
 var defaultClosedSlot = &Slot{
 	ID:        1,
 	ProjectID: defaultProjectID,
@@ -57,11 +58,11 @@ func (r *inMemSlotRepository) GetAll(_ db.Transaction, _ *pagination.Page, filte
 		if filter.Activity != nil && slot.Activity != *filter.Activity {
 			continue
 		}
-		if filter.StartTime != nil && !r.match(slot.Start, filter.StartTimeComparator, *filter.StartTime) {
+		if filter.From != nil && !r.match(slot.Start, filter.FromComparator, *filter.From) {
 			continue
 		}
-		if filter.EndTime != nil {
-			if slot.End == nil || !r.match(*slot.End, filter.EndTimeComparator, *filter.EndTime) {
+		if filter.Until != nil {
+			if slot.End == nil || !r.match(*slot.End, filter.UntilComparator, *filter.Until) {
 				continue
 			}
 		} else {
@@ -203,7 +204,7 @@ func TestDefaultService_Save(t *testing.T) {
 		name    string
 		given   scenario
 		slot    *Slot
-		want    *Slot
+		want    []*Slot
 		wantErr error
 	}{{
 		name:  "GIVEN open slot and empty database THEN save slot truncated to minutes",
@@ -213,12 +214,12 @@ func TestDefaultService_Save(t *testing.T) {
 			Activity:  ActivityWork,
 			Start:     testhelper.FixedNow,
 		},
-		want: &Slot{
+		want: []*Slot{{
 			ID:        1,
 			ProjectID: defaultProjectID,
 			Activity:  ActivityWork,
 			Start:     testhelper.FixedNow.Truncate(time.Minute),
-		},
+		}},
 	}, {
 		name:  "GIVEN open slot and open slot in database THEN throw ErrOpenSlotExists",
 		given: scenario{slots: []*Slot{defaultOpenSlot}},
@@ -242,12 +243,12 @@ func TestDefaultService_Save(t *testing.T) {
 			Activity:  ActivityWork,
 			Start:     testhelper.FixedNow.Add(4 * time.Minute),
 		},
-		want: &Slot{
+		want: []*Slot{{
 			ID:        7,
 			ProjectID: defaultProjectID,
 			Activity:  ActivityWork,
 			Start:     testhelper.FixedNow.Truncate(time.Minute).Add(4 * time.Minute),
-		},
+		}},
 	}, {
 		name:  "GIVEN slot with end before start THEN throw ErrSlotEndsBeforeStart",
 		given: scenario{slots: []*Slot{defaultOpenSlot}},
@@ -255,19 +256,29 @@ func TestDefaultService_Save(t *testing.T) {
 			ProjectID: defaultProjectID,
 			Activity:  ActivityWork,
 			Start:     testhelper.FixedNow,
-			End:       testhelper.Ptr(testhelper.FixedNow.Add(time.Hour * -24)),
+			End:       testhelper.Ptr(testhelper.FixedNow.Add(-24 * time.Hour)),
 		},
 		wantErr: ErrSlotEndsBeforeStart,
+	}, {
+		name: "GIVEN slot with end on different day THEN throw illegalEnd",
+		slot: &Slot{
+			ProjectID: defaultProjectID,
+			Activity:  ActivityWork,
+			Start:     testhelper.FixedNow,
+			End:       testhelper.Ptr(testhelper.FixedNow.Add(48 * time.Hour)),
+		},
+		wantErr: ErrSlotEndsOnDifferentDay,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s, repo := buildScenario(tt.given)
-			if err := s.Save(nil, tt.slot); !errors.Is(err, tt.wantErr) {
+			err := s.Save(nil, tt.slot)
+			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Save() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr == nil {
-				if diff := cmp.Diff(tt.want, repo.SavedSlots[0]); diff != "" {
-					t.Errorf("Save() mismatch (-want +got):\n%s", diff)
+				if diff := cmp.Diff(tt.want, repo.SavedSlots); diff != "" {
+					t.Errorf("Save() mismatch in repo (-want +got):\n%s", diff)
 				}
 			}
 		})

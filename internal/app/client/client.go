@@ -155,13 +155,13 @@ func (r *Repository) GetAll(tx db.Transaction, page *pagination.Page, filter *Fi
 		stmt += "\n" + whereClause
 		countStmt += "\n" + whereClause
 	}
-	if page.Offset != 0 {
-		stmt += "\nOFFSET :offset"
-		selectParams["offset"] = page.Offset
-	}
 	if page.Limit != -1 {
 		stmt += "\nLIMIT :limit"
 		selectParams["limit"] = page.Limit
+		if page.Offset != 0 {
+			stmt += "\nOFFSET :offset"
+			selectParams["offset"] = page.Offset * page.Limit
+		}
 	}
 	if len(whereClause) > 0 {
 		if err := tx.Select(page, countStmt, whereParams); err != nil {
