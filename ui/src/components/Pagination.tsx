@@ -1,4 +1,4 @@
-import { Button, Col, Row } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 import { Link } from "wouter";
 
 interface linkElement {
@@ -6,7 +6,7 @@ interface linkElement {
   caption: string;
   current: boolean;
 }
-export const PaginationRow = ({
+export const Pagination = ({
   location,
   searchString,
   offset,
@@ -33,57 +33,53 @@ export const PaginationRow = ({
     return null;
   }
   return (
-    <Row className="mt-2">
-      <Col className="text-center">
-        <div className="btn-group" role="group" aria-label="Pagination">
-          {index > 0 ? (
-            <Link
-              key={index - 1}
-              to={
-                location +
-                "?" +
-                searchStringSet(searchString, "page[offset]", index - 1 + "")
-              }
-              className="btn btn-outline-primary"
-            >
-              &lt;
-            </Link>
-          ) : (
-            <Button className="btn btn-outline-secondary" disabled>
-              &lt;
-            </Button>
-          )}
-          {links.map((e, index) => (
-            <Link
-              key={index}
-              to={e.url}
-              className={
-                "btn" + (e.current ? " btn-primary" : " btn-outline-primary")
-              }
-            >
-              {e.caption}
-            </Link>
-          ))}
-          {index < totalPages - 1 ? (
-            <Link
-              key={index + 1}
-              to={
-                location +
-                "?" +
-                searchStringSet(searchString, "page[offset]", index + 1 + "")
-              }
-              className="btn btn-outline-primary"
-            >
-              &gt;
-            </Link>
-          ) : (
-            <Button className="btn btn-outline-secondary" disabled>
-              &gt;
-            </Button>
-          )}
-        </div>
-      </Col>
-    </Row>
+    <div className="btn-group" role="group" aria-label="Pagination">
+      {index > 0 ? (
+        <Link
+          key={index - 1}
+          to={
+            location +
+            "?" +
+            searchStringSet(searchString, "page[offset]", index - 1 + "")
+          }
+          className="btn btn-outline-primary"
+        >
+          &lt;
+        </Link>
+      ) : (
+        <Button className="btn btn-outline-secondary" disabled>
+          &lt;
+        </Button>
+      )}
+      {links.map((e, index) => (
+        <Link
+          key={index}
+          to={e.url}
+          className={
+            "btn" + (e.current ? " btn-primary" : " btn-outline-primary")
+          }
+        >
+          {e.caption}
+        </Link>
+      ))}
+      {index < totalPages - 1 ? (
+        <Link
+          key={index + 1}
+          to={
+            location +
+            "?" +
+            searchStringSet(searchString, "page[offset]", index + 1 + "")
+          }
+          className="btn btn-outline-primary"
+        >
+          &gt;
+        </Link>
+      ) : (
+        <Button className="btn btn-outline-secondary" disabled>
+          &gt;
+        </Button>
+      )}
+    </div>
   );
 };
 function searchStringSet(

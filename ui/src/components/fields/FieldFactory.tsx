@@ -1,5 +1,5 @@
 import { ObjectForm } from "ts-jsonapi-form/form/ObjectForm.ts";
-import { ChangeEvent, JSX, useEffect, useState } from "react";
+import React, { ChangeEvent, JSX, useEffect, useState } from "react";
 import { CheckboxField } from "./CheckBox.tsx";
 import { LabeledGroup } from "./Label.tsx";
 import { TextAreaField, TextAreaProps, TextField } from "./Text.tsx";
@@ -27,12 +27,7 @@ export interface FieldColProps {
   placeholder?: string;
   disabled?: boolean;
   error?: string;
-  // onChange?: (e: ChangeEvent<FormControlElement>) => void;
-}
-export interface TypeSelectFieldColProps extends FieldColProps {
-  type: string;
-  withEmptyOption?: boolean;
-  multiple?: boolean;
+  required?: boolean;
 }
 export interface SelectFieldColProps extends FieldColProps {
   options: Map<string, string | null>;
@@ -179,11 +174,7 @@ export class BootstrapFieldFactory implements FieldFactory {
     onChange: React.ChangeEventHandler<FormControlElement>;
     defaultValue: T;
   } {
-    let path = name;
-    if (path != "id" && path != "type") {
-      path = "attributes." + path;
-    }
-    let value = this.form.getValue(path);
+    let value = this.form.getValue(name);
     const typesToCheck = ["string", "number", "boolean"];
     if (!typesToCheck.includes(typeof value)) {
       value = "";

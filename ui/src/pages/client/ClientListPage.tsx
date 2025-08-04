@@ -9,9 +9,17 @@ import { Included } from "ts-jsonapi-form/jsonapi/model/Document.ts";
 import { ReactElement } from "react";
 import { ApiToUiUrl } from "../../functions/url.ts";
 import { QueryKey } from "@tanstack/query-core";
+import { usePage } from "../../hooks/UsePage.ts";
 
 export function ClientListPage() {
-  return <ItemListPage searchProperty="name" itemCellsFunc={ClientCell} />;
+  const page = usePage();
+  return (
+    <ItemListPage
+      searchProperty="name"
+      itemCellsFunc={ClientCell}
+      opts={{ page: page }}
+    />
+  );
 }
 
 function ClientCell(
