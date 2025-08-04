@@ -216,6 +216,8 @@ func (h *SlotHandler) RegisterRoutes(route router.RouteElement) {
 	route.GET(":projectID/slot/new", h.Handle(h.New))
 	route.GET(":projectID/slot/:slotID", h.Handle(h.Get))
 	route.DELETE(":projectID/slot/:slotID", h.Handle(h.Delete))
+
+	route.GET(":projectID/slot/csv", h.DownloadCSV)
 }
 
 func (h *SlotHandler) Create(req *http.Request) (data *jsonapi.DocumentData[*Slot], jErr *jsonapi.Error) {
@@ -277,11 +279,9 @@ func (h *SlotHandler) Update(req *http.Request) (data *jsonapi.DocumentData[*Slo
 			}
 			slot.ID = slotID
 		}
-
 		if err := h.Service.Save(tx, slot); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to save slot", err)
 		}
-
 		data = jsonapi.NewDocumentData[*Slot](slot, fmt.Sprintf("/project/%d/slot", projectID))
 		return nil
 	}); err != nil {
@@ -386,6 +386,25 @@ func (h *SlotHandler) Delete(req *http.Request) (data *jsonapi.DocumentData[*Slo
 		}
 	}
 	return data, nil
+}
+
+func (h *SlotHandler) DownloadCSV(writer http.ResponseWriter, req *http.Request) {
+	data, err := h.GetAll(req)
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		_, _ = writer.Write([]byte(err.Error()))
+	}
+	if data == nil || data.Items == nil || len(data.Items) == 0 {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	writer.Header().Set("Content-Type", "text/csv")
+	writer.WriteHeader(http.StatusOK)
+	var slots []*Slot
+	for _, item := range data.Items {
+		slots = append(slots, item.Data)
+	}
+	_ = WriteAsCSV(writer, slots)
 }
 
 type ActivityHandler struct {
