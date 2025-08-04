@@ -52,7 +52,7 @@ Use it to track, manage, and evaluate time entries for multiple clients and proj
 ## 🧩 Roadmap
 
 - [ ] Role-based user management
-- [ ] CSV/Excel export
+- [x] CSV/~~Excel~~ export
 - [ ] Calendar view for time entries
 - [ ] OAuth2 / JWT authentication
 
