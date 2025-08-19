@@ -29,6 +29,10 @@ clean-server:
 clean-ui:
 	rm -fr ./ui/dist
 
-docker:
-	docker build -t protrakgon:latest .
-	docker save -o bin/protrakgon.tar protrakgon:latest
+docker: build
+	docker build -t $(NAME):arm-latest --target arm .
+	docker build -t $(NAME):amd-latest --target amd .
+
+docker-run:
+	docker rm $(NAME) -f
+	docker run --name $(NAME) -v ./db:/$(NAME)/db -p 8080:8080 $(NAME):amd-latest
