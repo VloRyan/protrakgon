@@ -1,7 +1,10 @@
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { Included, ResourceObject, } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import {
+  Included,
+  ResourceObject,
+} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 import { ReactElement } from "react";
 import { QueryKey } from "@tanstack/query-core";
@@ -42,4 +45,3 @@ function ClientCell(
     </>
   );
 }
-//

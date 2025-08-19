@@ -21,7 +21,7 @@ jobs:
         run: npm run lint
       - name: Check fmt
         working-directory: ./ui
-        run: npx prettier . --check
+        run: npm run fmt
 
   test-server:
     runs-on: ubuntu-latest
