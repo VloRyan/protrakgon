@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBomb } from "@fortawesome/free-solid-svg-icons";
-import { resolveIcon } from "../Icons.ts";
+import { resolveIcon } from "@vloryan/boot-api-ts/components/icons";
 
 interface TypeIconProps {
   type: string;

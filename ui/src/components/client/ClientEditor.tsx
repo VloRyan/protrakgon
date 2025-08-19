@@ -1,6 +1,6 @@
 import { Container, Row } from "react-bootstrap";
-import { ObjectForm } from "ts-jsonapi-form/form/ObjectForm.ts";
-import { BootstrapFieldFactory } from "../fields/FieldFactory.tsx";
+import { ObjectForm } from "@vloryan/ts-jsonapi-form/form/";
+import { BootstrapFieldFactory } from "@vloryan/boot-api-ts/components/fields/";
 
 export const ClientEditor = ({ form }: { form: ObjectForm }) => {
   const fields = new BootstrapFieldFactory(form);

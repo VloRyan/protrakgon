@@ -1,15 +1,13 @@
-import { ItemListPage } from "../../components/ItemListPage.tsx";
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { ItemActionCol } from "../../components/ItemRow.tsx";
-import { ResourceObject } from "ts-jsonapi-form/jsonapi/model/Objects.ts";
-import { Included } from "ts-jsonapi-form/jsonapi/model/Document.ts";
+import { Included, ResourceObject, } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 import { ReactElement } from "react";
-import { ApiToUiUrl } from "../../functions/url.ts";
 import { QueryKey } from "@tanstack/query-core";
-import { usePage } from "../../hooks/UsePage.ts";
+import { usePage } from "@vloryan/boot-api-ts/hooks/";
+import { ItemActionCol } from "@vloryan/boot-api-ts/components/";
+import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 
 export function ClientListPage() {
   const page = usePage();
@@ -31,7 +29,7 @@ function ClientCell(
     <>
       <Col>
         <span className="text-nowrap">
-          <Link to={ApiToUiUrl(obj.links!.self as string)}>
+          <Link to={`/client/${obj.id}`}>
             <TypeIcon type={obj.type as string} className="me-1"></TypeIcon>
             {obj.attributes && obj.attributes.name
               ? (obj.attributes.name as string)

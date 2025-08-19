@@ -1,24 +1,22 @@
 import { useLocation } from "wouter";
-import { ItemPage } from "../../components/ItemPage.tsx";
-
-import { SERVER_API_PATH } from "../../Config.ts";
-import { joinPath } from "../../functions/url.ts";
-import { useAlertSubmitResponseHandler } from "../../hooks/UseAlert.ts";
+import { ItemPage } from "@vloryan/boot-api-ts/pages/";
+import { apiPath } from "../../functions/url.ts";
+import {
+  useAlertSubmitResponseHandler,
+  useResource,
+  useResourceObjectForm,
+} from "@vloryan/boot-api-ts/hooks";
 import { ClientEditor } from "../../components/client/ClientEditor.tsx";
-import { useResource } from "../../hooks/UseResource.ts";
-import { useResourceObjectForm } from "../../hooks/UseResourceObjectForm.ts";
 
 export function ClientPage() {
   const [location] = useLocation();
   const submitResponseHandler = useAlertSubmitResponseHandler();
-  const { doc, isLoading, error, queryKey } = useResource(
-    joinPath(SERVER_API_PATH, "/v1/", location),
-  );
+  const { doc, isLoading, error, queryKey } = useResource(apiPath(location));
   const form = useResourceObjectForm({
     id: "clientForm",
-    object: doc && doc.data ? doc.data : null,
+    document: doc,
     queryKey: queryKey,
-    submitUrlPrefix: SERVER_API_PATH,
+    apiUrl: apiPath(location.replace(/\/new/, "")),
     submitResponseHandler: submitResponseHandler,
   });
   return (

@@ -1,17 +1,18 @@
-import { Button, Dropdown } from "react-bootstrap";
+import { capitalize } from "@vloryan/boot-api-ts/functions/";
+import { ButtonProps } from "react-bootstrap/Button";
+import {
+  useAlert,
+  useResourceObjectForm,
+  useResources,
+} from "@vloryan/boot-api-ts/hooks/";
+import { FormEvent, useEffect } from "react";
+import { apiPath } from "../../functions/url.ts";
+import { LoadingSpinner } from "@vloryan/boot-api-ts/components/";
+import { Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircle, faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
-import { ButtonProps } from "react-bootstrap/Button";
-
-import { LoadingSpinner } from "../LoadingSpinner.tsx";
-import { useAlert } from "../../hooks/UseAlert.ts";
-
-import { useEffect, useRef } from "react";
-import { capitalize } from "../../functions/strings.ts";
-import { SERVER_API_PATH } from "../../Config.ts";
-import { joinPath } from "../../functions/url.ts";
-import { useResources } from "../../hooks/UseResource.ts";
-import { useResourceObjectForm } from "../../hooks/UseResourceObjectForm.ts";
+import Dropdown from "react-bootstrap/Dropdown";
+import { LinksObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 export interface TrackingButtonProps extends ButtonProps {
   projectId: string;
@@ -21,31 +22,27 @@ export const TrackingButton = (props: TrackingButtonProps) => {
   useEffect(() => {
     clearAlerts();
   }, []);
-  const openSlots = useResources(
-    joinPath(SERVER_API_PATH, `/v1/project/${props.projectId}/slot`),
-    {
-      filter: { isOpen: true },
-    },
-  );
-  const activities = useResources(
-    joinPath(SERVER_API_PATH, "/v1/project/activity"),
-  );
+  const openSlots = useResources(apiPath(`/project/${props.projectId}/slot`), {
+    filter: { isOpen: true },
+  });
+  const activities = useResources(apiPath("/project/activity"));
   useEffect(() => {
     if (openSlots.error || activities.error) {
       addApiErrorAlerts(openSlots.error ? openSlots.error : activities.error!);
     }
   }, [openSlots.error, activities.error]);
-  const formRef = useRef<HTMLFormElement>(null);
   const slotForm = useResourceObjectForm({
-    object: {
-      id: "",
-      type: "slot",
-      attributes: { projectId: +props.projectId },
-      meta: {},
-      links: { self: `/v1/project/${props.projectId}/slot` },
+    document: {
+      data: {
+        id: "",
+        type: "slot",
+        attributes: { projectId: +props.projectId },
+        links: {
+          self: apiPath(`/project/${props.projectId}/slot`),
+        },
+      },
     },
     queryKey: openSlots.queryKey,
-    submitUrlPrefix: SERVER_API_PATH,
   });
   if (openSlots.error || activities.error) {
     return <></>;
@@ -62,13 +59,19 @@ export const TrackingButton = (props: TrackingButtonProps) => {
             variant="primary"
             size="sm"
             onClick={() => {
-              slotForm.object!.links = {
-                self: `/v1/project/${props.projectId}/slot/${item.id}`,
-              };
+              if (!slotForm.doc!.data!.links) {
+                slotForm.doc!.data!.links = {} satisfies LinksObject;
+              }
+              slotForm.doc!.data!.links!.self = apiPath(
+                `/project/${props.projectId}/slot/${item.id}`,
+              );
               slotForm.setValue("id", item.id);
-              slotForm.setValue("end", new Date());
-              formRef.current!.dispatchEvent(
-                new Event("submit", { cancelable: true, bubbles: true }),
+              slotForm.setValue("end", new Date().toISOString());
+              slotForm.handleSubmit(
+                new Event("submit", {
+                  cancelable: true,
+                  bubbles: true,
+                }) as unknown as FormEvent,
               );
             }}
           >
@@ -86,40 +89,37 @@ export const TrackingButton = (props: TrackingButtonProps) => {
             </span>
           </Button>
         ))}
-        <form ref={formRef} {...slotForm.setup()} />
       </div>
     );
-  } else {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { projectId: _, ...buttonProps } = props;
-    return (
-      <Dropdown>
-        <Dropdown.Toggle {...buttonProps}>
-          <FontAwesomeIcon
-            icon={faPlay}
-            title="Start tracking"
-          ></FontAwesomeIcon>
-        </Dropdown.Toggle>
-        <Dropdown.Menu>
-          {activities &&
-            activities.doc &&
-            activities.doc.data &&
-            activities.doc.data.map((item) => (
-              <Dropdown.Item
-                key={item.id}
-                onClick={() => {
-                  slotForm.setValue("activity", item.id);
-                  formRef.current!.dispatchEvent(
-                    new Event("submit", { cancelable: true, bubbles: true }),
-                  );
-                }}
-              >
-                {capitalize(item.attributes!.value as string)}
-              </Dropdown.Item>
-            ))}
-        </Dropdown.Menu>
-        <form ref={formRef} {...slotForm.setup()} />
-      </Dropdown>
-    );
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { projectId: _, ...buttonProps } = props;
+  return (
+    <Dropdown>
+      <Dropdown.Toggle {...buttonProps}>
+        <FontAwesomeIcon icon={faPlay} title="Start tracking"></FontAwesomeIcon>
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        {activities &&
+          activities.doc &&
+          activities.doc.data &&
+          activities.doc.data.map((item) => (
+            <Dropdown.Item
+              key={item.id}
+              onClick={() => {
+                slotForm.setValue("activity", item.id);
+                slotForm.handleSubmit(
+                  new Event("submit", {
+                    cancelable: true,
+                    bubbles: true,
+                  }) as unknown as FormEvent,
+                );
+              }}
+            >
+              {capitalize(item.attributes!.value as string)}
+            </Dropdown.Item>
+          ))}
+      </Dropdown.Menu>
+    </Dropdown>
+  );
 };

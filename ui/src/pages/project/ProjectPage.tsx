@@ -1,14 +1,19 @@
 import { Link, useLocation, useSearch } from "wouter";
 import { ProjectEditor } from "../../components/project/ProjectEditor.tsx";
-import { ItemPage } from "../../components/ItemPage.tsx";
+import { ItemPage } from "@vloryan/boot-api-ts/pages/";
 
 import { Button, Card, Col, Container, Row } from "react-bootstrap";
-import { SERVER_API_PATH } from "../../Config.ts";
-import { CreateButton, IconButton } from "../../components/Buttons.tsx";
-import { joinPath } from "../../functions/url.ts";
-import { useAlertSubmitResponseHandler } from "../../hooks/UseAlert.ts";
-import { useResource } from "../../hooks/UseResource.ts";
-import { useResourceObjectForm } from "../../hooks/UseResourceObjectForm.ts";
+import {
+  CreateButton,
+  IconButton,
+  SearchBar,
+} from "@vloryan/boot-api-ts//components/";
+import { apiPath } from "../../functions/url.ts";
+import {
+  useAlertSubmitResponseHandler,
+  useResource,
+  useResourceObjectForm,
+} from "@vloryan/boot-api-ts/hooks/";
 
 import { SlotList } from "../../components/project/SlotList.tsx";
 import { useState } from "react";
@@ -17,16 +22,15 @@ import {
   faFileExport,
   faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons";
-import { extractFetchOpts } from "ts-jsonapi-form/jsonapi/Request.ts";
-import { SingleObjectForm } from "ts-jsonapi-form/form/ObjectForm.ts";
-import { BootstrapFieldFactory } from "../../components/fields/FieldFactory.tsx";
-import { SearchBar } from "../../components/SearchBar.tsx";
-import { ObjectLike } from "ts-jsonapi-form/jsonapi/model/Types.ts";
-import { formatDateString } from "../../functions/date.ts";
 import {
   buildQueryString,
+  extractFetchOpts,
   FetchOpts,
-} from "ts-jsonapi-form/jsonapi/JsonApi.ts";
+} from "@vloryan/ts-jsonapi-form/jsonapi/";
+import { SingleObjectForm } from "@vloryan/ts-jsonapi-form/form/";
+import { BootstrapFieldFactory } from "@vloryan/boot-api-ts/components/fields/";
+import { ObjectLike } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import { formatDateString } from "@vloryan/boot-api-ts/functions/";
 
 export function ProjectPage() {
   const [location] = useLocation();
@@ -35,14 +39,12 @@ export function ProjectPage() {
   const fetchOpts = extractFetchOpts(searchString);
   const [showSearchBar, setShowSearchBar] = useState(false);
   const submitResponseHandler = useAlertSubmitResponseHandler();
-  const { doc, isLoading, error, queryKey } = useResource(
-    joinPath(SERVER_API_PATH, "/v1/", location),
-  );
+  const { doc, isLoading, error, queryKey } = useResource(apiPath(location));
   const form = useResourceObjectForm({
     id: "projectForm",
-    object: doc && doc.data ? doc.data : null,
+    document: doc,
     queryKey: queryKey,
-    submitUrlPrefix: SERVER_API_PATH,
+    apiUrl: apiPath(location.replace(/\/new/, "")),
     submitResponseHandler: submitResponseHandler,
   });
   if (fetchOpts.filter === undefined) {
@@ -104,7 +106,7 @@ export function ProjectPage() {
         </Card.Title>
         <Card.Body>
           <SlotList
-            resourcesUrl={joinPath(SERVER_API_PATH, "/v1/", location, "/slot")}
+            resourcesUrl={apiPath(location, "slot")}
             locationUrl={location}
             fetchOpts={fetchOpts}
           ></SlotList>
@@ -247,12 +249,7 @@ const DownloadSlotCSVButton = ({ opts }: { opts: FetchOpts }) => {
       download={fileName + ".csv"}
       className="ms-2"
       title="Download .csv file"
-      href={joinPath(
-        SERVER_API_PATH,
-        "/v1/",
-        location,
-        "/slot/csv" + buildQueryString(opts),
-      )}
+      href={apiPath(location, "/slot/csv" + buildQueryString(opts))}
     >
       <IconButton icon={faFileExport} variant={"outline-primary"} size="sm" />
     </a>

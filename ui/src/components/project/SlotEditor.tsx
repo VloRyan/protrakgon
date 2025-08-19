@@ -1,21 +1,19 @@
 import { Container, Row } from "react-bootstrap";
-import { ObjectForm } from "ts-jsonapi-form/form/ObjectForm.ts";
+import { ObjectForm } from "@vloryan/ts-jsonapi-form/form/";
 import { useEffect } from "react";
-import { useAlert } from "../../hooks/UseAlert.ts";
-import { capitalize } from "../../functions/strings.ts";
-import { SERVER_API_PATH } from "../../Config.ts";
-import { BootstrapFieldFactory } from "../fields/FieldFactory.tsx";
-import { joinPath } from "../../functions/url.ts";
-import { useResources } from "../../hooks/UseResource.ts";
+import { useAlert, useResources } from "@vloryan/boot-api-ts/hooks/";
+import { capitalize } from "@vloryan/boot-api-ts/functions/";
+import { BootstrapFieldFactory } from "@vloryan/boot-api-ts/components/fields/";
+import { apiPath } from "../../functions/url.ts";
+import { useLocation } from "wouter";
 
 export const SlotEditor = ({ form }: { form: ObjectForm }) => {
   const { addApiErrorAlerts, clearAlerts } = useAlert();
+  const [location] = useLocation();
   useEffect(() => {
     clearAlerts();
   }, []);
-  const activities = useResources(
-    joinPath(SERVER_API_PATH, "/v1/project/activity"),
-  );
+  const activities = useResources(apiPath(location, "/project/activity"));
   useEffect(() => {
     if (activities.error) {
       addApiErrorAlerts(activities.error);
