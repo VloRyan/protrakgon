@@ -1,12 +1,15 @@
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../TypeIcon.tsx";
-import { capitalize, padLeft } from "../../functions/strings.ts";
-import { formatDateString } from "../../functions/date.ts";
-import { ItemActionCol } from "../ItemRow.tsx";
-import { ItemGroup, ItemList } from "../ItemList.tsx";
-import { ResourceObject } from "ts-jsonapi-form/jsonapi/model/Objects.ts";
-import { FetchOpts } from "ts-jsonapi-form/jsonapi/JsonApi.ts";
+import { capitalize, padLeft } from "@vloryan/boot-api-ts/functions/";
+import { formatDateString } from "@vloryan/boot-api-ts/functions/date.ts";
+import {
+  ItemActionCol,
+  ItemGroup,
+  ItemList,
+} from "@vloryan/boot-api-ts/components/";
+import { ResourceObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import { FetchOpts } from "@vloryan/ts-jsonapi-form/jsonapi/";
 
 export const SlotList = ({
   resourcesUrl,

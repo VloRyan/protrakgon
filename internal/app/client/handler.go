@@ -33,7 +33,7 @@ func (h *Handler) Create(req *http.Request) (data *jsonapi.DocumentData[*Client]
 	con := request.DB(req)
 	if err := con.DoTransaction(func(tx db.Transaction) error {
 		item := &Client{}
-		if err := httpx.ShouldBindWith(req, item, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, item, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		if err := h.Service.Save(tx, item); err != nil {
@@ -64,7 +64,7 @@ func (h *Handler) Update(req *http.Request) (data *jsonapi.DocumentData[*Client]
 			return jsonapi.NewError(http.StatusInternalServerError, "client with id: "+strconv.Itoa(int(clientID))+" not found", err)
 		}
 
-		if err := httpx.ShouldBindWith(req, item, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, item, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		if item.ID != clientID {

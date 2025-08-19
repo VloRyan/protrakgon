@@ -1,6 +1,7 @@
 import logo from "../../assets/icon.svg";
-import { APP_NAME } from "../Config.ts";
+import { APP_NAME, CONTEXT_ROOT } from "../Config.ts";
 import { Col, Container, Row } from "react-bootstrap";
+import { joinPath } from "@vloryan/boot-api-ts/functions";
 
 export const DashboardPage = () => {
   return (
@@ -8,7 +9,10 @@ export const DashboardPage = () => {
       <Row className="align-items-center mt-5">
         <Col>
           <img
-            src={logo}
+            src={logo.replace(
+              "/assets/",
+              joinPath(CONTEXT_ROOT, "assets") + "/",
+            )}
             className="me-2"
             alt={APP_NAME}
             title={APP_NAME}

@@ -73,7 +73,7 @@ func (h *Handler) Create(req *http.Request) (data *jsonapi.DocumentData[*Project
 	con := request.DB(req)
 	if err := con.DoTransaction(func(tx db.Transaction) error {
 		item := &Project{}
-		if err := httpx.ShouldBindWith(req, item, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, item, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		if err := h.Service.Save(tx, item); err != nil {
@@ -104,7 +104,7 @@ func (h *Handler) Update(req *http.Request) (data *jsonapi.DocumentData[*Project
 			return jsonapi.NewError(http.StatusInternalServerError, "project with id: "+strconv.Itoa(int(projectID))+" not found", err)
 		}
 
-		if err := httpx.ShouldBindWith(req, item, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, item, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		if item.ID != projectID {
@@ -224,7 +224,7 @@ func (h *SlotHandler) Create(req *http.Request) (data *jsonapi.DocumentData[*Slo
 	con := request.DB(req)
 	if err := con.DoTransaction(func(tx db.Transaction) error {
 		slot := &Slot{}
-		if err := httpx.ShouldBindWith(req, slot, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, slot, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		projectID := request.QueryInt(req, ":projectID", 0)
@@ -264,7 +264,7 @@ func (h *SlotHandler) Update(req *http.Request) (data *jsonapi.DocumentData[*Slo
 			return jsonapi.NewError(http.StatusInternalServerError, "slot with id: "+strconv.Itoa(slotID)+" not found", err)
 		}
 		projectID := request.QueryInt(req, ":projectID", 0)
-		if err := httpx.ShouldBindWith(req, slot, jsonapi.APIBinding); err != nil {
+		if err := httpx.ShouldBindWith(req, slot, jsonapi.Binding); err != nil {
 			return jsonapi.NewError(http.StatusInternalServerError, "failed to bind body", err)
 		}
 		if slot.ProjectID != projectID {

@@ -1,10 +1,12 @@
-import { ItemListPage } from "../../components/ItemListPage.tsx";
+import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { ItemActionCol } from "../../components/ItemRow.tsx";
-import { toLocaleDateTimeString } from "../../functions/date.ts";
-import { capitalize } from "../../functions/strings.ts";
+import { ItemActionCol } from "@vloryan/boot-api-ts/components/";
+import {
+  capitalize,
+  toLocaleDateTimeString,
+} from "@vloryan/boot-api-ts/functions/";
 
 export function SlotListPage() {
   return (

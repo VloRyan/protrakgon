@@ -1,18 +1,17 @@
-import { ItemListPage } from "../../components/ItemListPage.tsx";
+import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { ItemActionCol } from "../../components/ItemRow.tsx";
+import { ItemActionCol } from "@vloryan/boot-api-ts/components/";
 import {
+  Included,
   ResourceIdentifierObject,
   ResourceObject,
-} from "ts-jsonapi-form/jsonapi/model/Objects.ts";
-import { Included } from "ts-jsonapi-form/jsonapi/model/Document.ts";
+} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 import { JSX, ReactElement } from "react";
 import { TrackingButton } from "../../components/project/TrackingButton.tsx";
-import { ApiToUiUrl } from "../../functions/url.ts";
-import { findInclude } from "ts-jsonapi-form/jsonapi/JsonApi.ts";
+import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi/";
 import { QueryKey } from "@tanstack/query-core";
 
 export function ProjectListPage() {
@@ -31,16 +30,16 @@ function ProjectCell(
   included: Included,
   queryKey: QueryKey,
 ): ReactElement {
-  let clientRow: JSX.Element | null = null;
+  let clientCol: JSX.Element | null = null;
   const client = findInclude(
     obj.relationships!.client.data as ResourceIdentifierObject,
     included,
   );
   if (client) {
-    clientRow = (
+    clientCol = (
       <Col sm={1}>
         <span className="text-nowrap">
-          <Link to={ApiToUiUrl(client.links!.self as string)}>
+          <Link to={`/client/${client.id}`}>
             <TypeIcon type={client.type as string} className="me-1"></TypeIcon>
             {client.attributes && client.attributes.name
               ? (client.attributes.name as string)
@@ -55,7 +54,7 @@ function ProjectCell(
     <>
       <Col>
         <span className="text-nowrap">
-          <Link to={ApiToUiUrl(obj.links!.self as string)}>
+          <Link to={`/project/${obj.id}`}>
             <TypeIcon type={obj.type as string} className="me-1"></TypeIcon>
             {obj.attributes && obj.attributes.name
               ? (obj.attributes.name as string)
@@ -63,7 +62,7 @@ function ProjectCell(
           </Link>
         </span>
       </Col>
-      {clientRow}
+      {clientCol}
       <Col className="d-md-block">
         <div className="d-none">{obj.attributes!.description! as string}</div>
       </Col>

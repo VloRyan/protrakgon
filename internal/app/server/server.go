@@ -3,7 +3,11 @@ package server
 import (
 	"context"
 	"io/fs"
+	"mime"
 	"net/http"
+	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -16,39 +20,53 @@ import (
 )
 
 type Server struct {
-	HTTP             *httpx.Server
-	Router           *goltmux.Router
-	ContextRoot      string
+	HTTP   *httpx.Server
+	Router *goltmux.Router
+	/*ContextRoot defines the url prefix for all api routes*/
+	ContextRoot string
+	/*ProxyLocation defines a prefix used from outside to route to this instance. E.g. if you use a reverse proxy, the location url has to be defined here in order to provide correct path of resources.		 */
+	ProxyLocation    string
+	ApiRoutePrefix   string
 	databaseFileName string
 	assets           fs.FS
 	uiSrc            fs.FS
 	moduleCreator    []func() Module
 	modules          []Module
+	indexHtml        string
 }
 
-func (srv *Server) WithModule(creator func() Module) *Server {
-	srv.moduleCreator = append(srv.moduleCreator, creator)
-	return srv
+func (svr *Server) WithModule(creator func() Module) *Server {
+	svr.moduleCreator = append(svr.moduleCreator, creator)
+	return svr
 }
 
-func (srv *Server) WithDBFile(databaseFileName string) *Server {
-	srv.databaseFileName = databaseFileName
-	return srv
+func (svr *Server) WithDBFile(databaseFileName string) *Server {
+	svr.databaseFileName = databaseFileName
+	return svr
 }
 
-func (srv *Server) WithAssets(assets fs.FS) *Server {
-	srv.assets = assets
-	return srv
+func (svr *Server) WithAssets(assets fs.FS) *Server {
+	svr.assets = assets
+	return svr
 }
 
-func (srv *Server) WithUISrc(uiSrc fs.FS) *Server {
-	srv.uiSrc = uiSrc
-	return srv
+func (svr *Server) WithUISrc(uiSrc fs.FS) *Server {
+	svr.uiSrc = uiSrc
+	return svr
 }
 
-func (srv *Server) WithContextRoot(contextRoot string) *Server {
-	srv.ContextRoot = contextRoot
-	return srv
+func (svr *Server) WithContextRoot(contextRoot string) *Server {
+	svr.ContextRoot = contextRoot
+	return svr
+}
+
+func (svr *Server) WithProxyLocation(proxyLocation string) *Server {
+	svr.ProxyLocation = proxyLocation
+	return svr
+}
+func (svr *Server) WithApiRoutePrefix(apiRoutePrefix string) *Server {
+	svr.ApiRoutePrefix = apiRoutePrefix
+	return svr
 }
 
 type Module interface {
@@ -63,13 +81,13 @@ func New() *Server {
 	}
 }
 
-func (srv *Server) setupDB() (*sqlite.Connection, *db.MigrationInfo, error) {
-	connection, err := sqlite.NewConnection(srv.databaseFileName + "?_fk=on") // with foreign key support
+func (svr *Server) setupDB() (*sqlite.Connection, *db.MigrationInfo, error) {
+	connection, err := sqlite.NewConnection(svr.databaseFileName + "?_fk=on") // with foreign key support
 	if err != nil {
 		return nil, nil, err
 	}
 
-	d, err := iofs.New(srv.assets, "migrations")
+	d, err := iofs.New(svr.assets, "migrations")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,40 +103,47 @@ func (srv *Server) setupDB() (*sqlite.Connection, *db.MigrationInfo, error) {
 	return connection, info, nil
 }
 
-func (srv *Server) Run() error {
-	connection, _, err := srv.setupDB()
+func (svr *Server) Run() error {
+	connection, _, err := svr.setupDB()
 	if err != nil {
 		return err
 	}
-
-	srcFileServer := http.FileServer(http.FS(srv.uiSrc))
-	srv.Router.NotFoundHandler = func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		if path == "/" || path == "/index.html" || strings.HasPrefix(path, "/assets/") {
-			srcFileServer.ServeHTTP(w, r)
+	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot)
+	svr.indexHtml, err = httpx.GenerateReplacedIndexHTML(svr.uiSrc, fullPrefix, `{apiUrl: "`+path.Join(fullPrefix, svr.ApiRoutePrefix)+`", contextRoot: "`+fullPrefix+`"}`)
+	if err != nil {
+		panic(err)
+	}
+	svr.Router.NotFoundHandler = func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, svr.ContextRoot) {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		http.ServeFileFS(w, r, srv.uiSrc, "index.html")
+		if isIndexAsset(r.URL.Path) {
+			filePath := r.URL.Path[len(svr.ContextRoot):]
+			mimeType := mime.TypeByExtension(filepath.Ext(filePath))
+			w.Header().Set("Content-Type", mimeType)
+			http.ServeFileFS(w, r, svr.uiSrc, filePath)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(svr.indexHtml))
 	}
 
-	root := router.NewRoute(srv.ContextRoot, func(method, path string, handler http.HandlerFunc) {
-		srv.Router.HandleMethod(method, path, handler)
+	root := router.NewRoute(path.Join(svr.ContextRoot, svr.ApiRoutePrefix), func(method, path string, handler http.HandlerFunc) {
+		svr.Router.HandleMethod(method, path, handler)
 	})
-	for _, creator := range srv.moduleCreator {
+	for _, creator := range svr.moduleCreator {
 		module := creator()
-		srv.modules = append(srv.modules, module)
+		svr.modules = append(svr.modules, module)
 		module.Setup(root)
 	}
 
-	srv.HTTP.WithMiddleware(func(req *http.Request) *http.Request {
+	svr.HTTP.WithMiddleware(func(req *http.Request) *http.Request {
 		return req.WithContext(context.WithValue(req.Context(), request.CtxKeyDatabase, db.WithStatementLogger(connection)))
 	})
 
-	/*srv.Router.HandleFunc(srv.ContextRoot, func(writer http.ResponseWriter, r *http.Request) {
-		http.NotFound(writer, r)
-	})*/
-
-	/*_ = srv.Router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	/*_ = svr.Router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		pathTemplate, err := route.GetPathTemplate()
 		if err == nil {
 			fmt.Println("ROUTE:", pathTemplate)
@@ -143,5 +168,9 @@ func (srv *Server) Run() error {
 		return nil
 	})*/
 
-	return srv.HTTP.ListenAndServe()
+	return svr.HTTP.ListenAndServe()
+}
+func isIndexAsset(path string) bool {
+	match, _ := regexp.MatchString("/assets/(index|icon)-[\\w-]+\\.(css|js|svg)$", path)
+	return match
 }
