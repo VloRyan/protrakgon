@@ -22,6 +22,9 @@ var uiDistDir embed.FS
 
 func main() {
 	debug := env.GetOrDefaultBool("DEBUG", false)
+	contextRoot := env.GetOrDefault("CONTEXT_ROOT", "/")
+	proxyLocation := env.GetOrDefault("PROXY_LOCATION", "/")
+	apiRoutePrefix := env.GetOrDefault("API_ROUTE_PREFIX", "/v1")
 	InitLog(debug)
 	var assetDir fs.FS
 	if debug {
@@ -41,13 +44,15 @@ func main() {
 	}
 
 	srv := server.New().
-		WithContextRoot("v1").
+		WithContextRoot(contextRoot).
+		WithProxyLocation(proxyLocation).
+		WithApiRoutePrefix(apiRoutePrefix).
 		WithModule(func() server.Module {
 			return server.NewJsonAPIModule(domainHandler())
 		}).
 		WithAssets(assetDir).
 		WithUISrc(uiSrc).
-		WithDBFile("db/protrakgon.db")
+		WithDBFile("./db/protrakgon.db")
 
 	if err := srv.Run(); err != nil {
 		panic(err)
