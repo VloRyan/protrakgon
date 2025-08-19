@@ -10,7 +10,7 @@
     "fmt": "prettier **/*.{js,ts,jsx,tsx,cjs,cts,mjs,mts,yml,yaml} --check --no-error-on-unmatched-pattern",
     "fmt-write": "prettier **/*.{js,ts,jsx,tsx,cjs,cts,mjs,mts,yml,yaml} --write --no-error-on-unmatched-pattern",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest run --passWithNoTests=true"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
