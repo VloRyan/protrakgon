@@ -3,8 +3,8 @@ import { ItemPage } from "@vloryan/boot-api-ts/pages/";
 import { apiPath } from "../../functions/url.ts";
 import {
   useAlertSubmitResponseHandler,
+  useDocumentForm,
   useResource,
-  useResourceObjectForm,
 } from "@vloryan/boot-api-ts/hooks";
 import { ClientEditor } from "../../components/client/ClientEditor.tsx";
 
@@ -12,7 +12,7 @@ export function ClientPage() {
   const [location] = useLocation();
   const submitResponseHandler = useAlertSubmitResponseHandler();
   const { doc, isLoading, error, queryKey } = useResource(apiPath(location));
-  const form = useResourceObjectForm({
+  const form = useDocumentForm({
     id: "clientForm",
     document: doc,
     queryKey: queryKey,

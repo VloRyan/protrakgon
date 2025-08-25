@@ -2,7 +2,7 @@ import { capitalize } from "@vloryan/boot-api-ts/functions/";
 import { ButtonProps } from "react-bootstrap/Button";
 import {
   useAlert,
-  useResourceObjectForm,
+  useDocumentForm,
   useResources,
 } from "@vloryan/boot-api-ts/hooks/";
 import { FormEvent, useEffect } from "react";
@@ -31,7 +31,7 @@ export const TrackingButton = (props: TrackingButtonProps) => {
       addApiErrorAlerts(openSlots.error ? openSlots.error : activities.error!);
     }
   }, [openSlots.error, activities.error]);
-  const slotForm = useResourceObjectForm({
+  const slotForm = useDocumentForm({
     document: {
       data: {
         id: "",

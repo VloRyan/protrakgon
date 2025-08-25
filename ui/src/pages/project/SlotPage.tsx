@@ -5,8 +5,8 @@ import { ItemPage } from "@vloryan/boot-api-ts/pages/";
 import { apiPath } from "../../functions/url.ts";
 import {
   useAlertSubmitResponseHandler,
+  useDocumentForm,
   useResource,
-  useResourceObjectForm,
 } from "@vloryan/boot-api-ts/hooks/";
 import { SlotEditor } from "../../components/project/SlotEditor.tsx";
 
@@ -14,7 +14,7 @@ export function SlotPage() {
   const [location] = useLocation();
   const submitResponseHandler = useAlertSubmitResponseHandler();
   const { doc, isLoading, error, queryKey } = useResource(apiPath(location));
-  const form = useResourceObjectForm({
+  const form = useDocumentForm({
     id: "slotForm",
     document: doc,
     queryKey: queryKey,

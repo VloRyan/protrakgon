@@ -11,8 +11,8 @@ import {
 import { apiPath } from "../../functions/url.ts";
 import {
   useAlertSubmitResponseHandler,
+  useDocumentForm,
   useResource,
-  useResourceObjectForm,
 } from "@vloryan/boot-api-ts/hooks/";
 
 import { SlotList } from "../../components/project/SlotList.tsx";
@@ -37,10 +37,10 @@ export function ProjectPage() {
 
   const searchString = useSearch();
   const fetchOpts = extractFetchOpts(searchString);
-  const [showSearchBar, setShowSearchBar] = useState(false);
+
   const submitResponseHandler = useAlertSubmitResponseHandler();
   const { doc, isLoading, error, queryKey } = useResource(apiPath(location));
-  const form = useResourceObjectForm({
+  const form = useDocumentForm({
     id: "projectForm",
     document: doc,
     queryKey: queryKey,
@@ -67,62 +67,70 @@ export function ProjectPage() {
       <form {...form.setup()}>
         <ProjectEditor form={form} />
       </form>
-      <Card className="mt-2 mx-3">
-        <Card.Title className="text-center">
-          <Row className="pt-2">
-            <Col className="d-flex justify-content-start ps-4 fw-bold">
-              Slots
-            </Col>
-            <Col className="d-flex justify-content-center" xs="auto">
-              <Link to={location + "/slot/new"} className="ms-2">
-                <CreateButton size="sm" />
-              </Link>
-              <DownloadSlotCSVButton opts={fetchOpts} key={"dlCSV"} />
-            </Col>
-            <Col className="d-flex justify-content-end me-2 fs-6 small">
-              {formatTimespan(
-                fetchOpts.filter["from"] as string,
-                fetchOpts.filter["fromComparator"] as string,
-                fetchOpts.filter["until"] !== undefined
-                  ? (fetchOpts.filter["until"] as string)
-                  : undefined,
-                fetchOpts.filter["untilComparator"] as string,
-              )}
-
-              <Button
-                variant={
-                  Object.keys(fetchOpts.filter).length === 0
-                    ? "outline-primary"
-                    : "primary"
-                }
-                className="ms-2"
-                id="button-search"
-                onClick={() => setShowSearchBar(true)}
-              >
-                <FontAwesomeIcon icon={faMagnifyingGlass} />
-              </Button>
-            </Col>
-          </Row>
-        </Card.Title>
-        <Card.Body>
-          <SlotList
-            resourcesUrl={apiPath(location, "slot")}
-            locationUrl={location}
-            fetchOpts={fetchOpts}
-          ></SlotList>
-          <SearchBar
-            show={showSearchBar}
-            setShow={setShowSearchBar}
-            content={SlotSearchBarContent}
-            filter={fetchOpts.filter}
-            onBeforeSearch={ValidateForm}
-          />
-        </Card.Body>
-      </Card>
+      <SlotCard fetchOpts={fetchOpts} />
     </ItemPage>
   );
 }
 
+const SlotCard = ({ fetchOpts }: { fetchOpts: FetchOpts }) => {
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [location] = useLocation();
+  if (fetchOpts.filter === undefined) {
+    fetchOpts.filter = {};
+  }
+  return (
+    <Card className="mt-2 mx-3">
+      <Card.Title className="text-center">
+        <Row className="pt-2">
+          <Col className="d-flex justify-content-start ps-4 fw-bold">Slots</Col>
+          <Col className="d-flex justify-content-center" xs="auto">
+            <Link to={location + "/slot/new"} className="ms-2">
+              <CreateButton size="sm" />
+            </Link>
+            <DownloadSlotCSVButton opts={fetchOpts} key={"dlCSV"} />
+          </Col>
+          <Col className="d-flex justify-content-end me-2 fs-6 small">
+            {formatTimespan(
+              fetchOpts.filter["from"] as string,
+              fetchOpts.filter["fromComparator"] as string,
+              fetchOpts.filter["until"] !== undefined
+                ? (fetchOpts.filter["until"] as string)
+                : undefined,
+              fetchOpts.filter["untilComparator"] as string,
+            )}
+
+            <Button
+              variant={
+                Object.keys(fetchOpts.filter).length === 0
+                  ? "outline-primary"
+                  : "primary"
+              }
+              className="ms-2"
+              id="button-search"
+              onClick={() => setShowSearchBar(true)}
+            >
+              <FontAwesomeIcon icon={faMagnifyingGlass} />
+            </Button>
+          </Col>
+        </Row>
+      </Card.Title>
+      <Card.Body>
+        <SlotList
+          resourcesUrl={apiPath(location, "slot")}
+          locationUrl={location}
+          fetchOpts={fetchOpts}
+        ></SlotList>
+        <SearchBar
+          show={showSearchBar}
+          setShow={setShowSearchBar}
+          content={SlotSearchBarContent}
+          filter={fetchOpts.filter}
+          onBeforeSearch={ValidateForm}
+        />
+      </Card.Body>
+    </Card>
+  );
+};
 const SlotSearchBarContent = (form: SingleObjectForm<ObjectLike>) => {
   const fields = new BootstrapFieldFactory(form);
   return (

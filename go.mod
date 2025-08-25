@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/rs/zerolog v1.34.0
-	github.com/vloryan/go-libs v0.0.0-20250819073421-85c156dd3177
+	github.com/vloryan/go-libs v0.0.0-20250825061333-56142de0564c
 	github.com/vloryan/goltmux v0.0.0-20250616121411-547ebefff060
 )
 

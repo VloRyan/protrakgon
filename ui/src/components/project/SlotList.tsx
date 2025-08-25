@@ -10,6 +10,7 @@ import {
 } from "@vloryan/boot-api-ts/components/";
 import { ResourceObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 import { FetchOpts } from "@vloryan/ts-jsonapi-form/jsonapi/";
+import { joinPath } from "@vloryan/boot-api-ts/functions";
 
 export const SlotList = ({
   resourcesUrl,
@@ -25,13 +26,14 @@ export const SlotList = ({
       resourcesUrl={resourcesUrl}
       locationUrl={locationUrl}
       opts={fetchOpts}
-      itemCellsFunc={(obj, _includes, queryKey) => {
+      cells={(obj, _includes, queryKey) => {
         const isOpen = new Date(obj.attributes!.end as string).getDate() == 1;
         const timeDiff =
           !isOpen && obj.attributes!.end
             ? new Date(obj.attributes!.end as string).getTime() -
               new Date(obj.attributes!.start as string).getTime()
             : 0;
+        const objectUrl = joinPath(locationUrl, "/slot/${obj.id}");
         return (
           <>
             <Col xs="1" sm="auto">
@@ -66,7 +68,7 @@ export const SlotList = ({
                 {timeDiff > 0 ? formatDiff(timeDiff) : null}
               </div>
             </Col>
-            <ItemActionCol object={obj} queryKey={queryKey} />
+            <ItemActionCol objectUrl={objectUrl} queryKey={queryKey} />
           </>
         );
       }}

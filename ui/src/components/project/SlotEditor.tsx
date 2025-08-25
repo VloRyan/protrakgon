@@ -5,15 +5,13 @@ import { useAlert, useResources } from "@vloryan/boot-api-ts/hooks/";
 import { capitalize } from "@vloryan/boot-api-ts/functions/";
 import { BootstrapFieldFactory } from "@vloryan/boot-api-ts/components/fields/";
 import { apiPath } from "../../functions/url.ts";
-import { useLocation } from "wouter";
 
 export const SlotEditor = ({ form }: { form: ObjectForm }) => {
   const { addApiErrorAlerts, clearAlerts } = useAlert();
-  const [location] = useLocation();
   useEffect(() => {
     clearAlerts();
   }, []);
-  const activities = useResources(apiPath(location, "/project/activity"));
+  const activities = useResources(apiPath("/project/activity"));
   useEffect(() => {
     if (activities.error) {
       addApiErrorAlerts(activities.error);
@@ -39,7 +37,7 @@ export const SlotEditor = ({ form }: { form: ObjectForm }) => {
           name="activity"
           options={activityTypes}
         />
-        <fields.DateTime label="Start" name="start" />
+        <fields.DateTime label="Start" name="start" required />
         <fields.DateTime label="End" name="end" />
       </Row>
       <Row>

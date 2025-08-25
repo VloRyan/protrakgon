@@ -19,7 +19,7 @@ export function ProjectListPage() {
   return (
     <ItemListPage
       searchProperty="name"
-      itemCellsFunc={ProjectCell}
+      cells={ProjectCell}
       opts={{ includes: !isMobile ? ["client"] : [] }}
     />
   );
@@ -35,6 +35,7 @@ function ProjectCell(
     obj.relationships!.client.data as ResourceIdentifierObject,
     included,
   );
+  const objUrl = `/project/${obj.id}`;
   if (client) {
     clientCol = (
       <Col sm={1}>
@@ -54,7 +55,7 @@ function ProjectCell(
     <>
       <Col>
         <span className="text-nowrap">
-          <Link to={`/project/${obj.id}`}>
+          <Link to={objUrl}>
             <TypeIcon type={obj.type as string} className="me-1"></TypeIcon>
             {obj.attributes && obj.attributes.name
               ? (obj.attributes.name as string)
@@ -66,7 +67,7 @@ function ProjectCell(
       <Col className="d-md-block">
         <div className="d-none">{obj.attributes!.description! as string}</div>
       </Col>
-      <ItemActionCol object={obj} queryKey={queryKey}>
+      <ItemActionCol objectUrl={objUrl} queryKey={queryKey}>
         <TrackingButton projectId={obj.id} variant="success" size="sm" />
       </ItemActionCol>
     </>
