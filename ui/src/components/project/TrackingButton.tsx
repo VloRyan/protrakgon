@@ -10,9 +10,18 @@ import { apiPath } from "../../functions/url.ts";
 import { LoadingSpinner } from "@vloryan/boot-api-ts/components/";
 import { Button } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircle, faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCircle,
+  faPause,
+  faPlay,
+  IconName,
+} from "@fortawesome/free-solid-svg-icons";
 import Dropdown from "react-bootstrap/Dropdown";
-import { LinksObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import {
+  LinksObject,
+  ResourceIdentifierObject,
+} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi";
 
 export interface TrackingButtonProps extends ButtonProps {
   projectId: string;
@@ -24,8 +33,11 @@ export const TrackingButton = (props: TrackingButtonProps) => {
   }, []);
   const openSlots = useResources(apiPath(`/project/${props.projectId}/slot`), {
     filter: { isOpen: true },
+    includes: ["activity"],
   });
-  const activities = useResources(apiPath("/project/activity"));
+  const activities = useResources(
+    apiPath(`/project/${props.projectId}/activity`),
+  );
   useEffect(() => {
     if (openSlots.error || activities.error) {
       addApiErrorAlerts(openSlots.error ? openSlots.error : activities.error!);
@@ -35,8 +47,10 @@ export const TrackingButton = (props: TrackingButtonProps) => {
     document: {
       data: {
         id: "",
-        type: "slot",
-        attributes: { projectId: +props.projectId },
+        type: "project.slot",
+        relationships: {
+          project: { data: { id: props.projectId, type: "project" } },
+        },
         links: {
           self: apiPath(`/project/${props.projectId}/slot`),
         },
@@ -45,6 +59,7 @@ export const TrackingButton = (props: TrackingButtonProps) => {
     queryKey: openSlots.queryKey,
   });
   if (openSlots.error || activities.error) {
+    addApiErrorAlerts(openSlots.error ? openSlots.error : activities.error!);
     return <></>;
   }
   if (openSlots.isLoading || activities.isLoading) {
@@ -53,42 +68,50 @@ export const TrackingButton = (props: TrackingButtonProps) => {
   if (openSlots.doc && openSlots.doc.data && openSlots.doc.data.length > 0) {
     return (
       <div>
-        {openSlots.doc.data.map((item) => (
-          <Button
-            key={item.attributes!.activity as string}
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              if (!slotForm.doc!.data!.links) {
-                slotForm.doc!.data!.links = {} satisfies LinksObject;
-              }
-              slotForm.doc!.data!.links!.self = apiPath(
-                `/project/${props.projectId}/slot/${item.id}`,
-              );
-              slotForm.setValue("id", item.id);
-              slotForm.setValue("end", new Date().toISOString());
-              slotForm.handleSubmit(
-                new Event("submit", {
-                  cancelable: true,
-                  bubbles: true,
-                }) as unknown as FormEvent,
-              );
-            }}
-          >
-            <span className="text-nowrap">
-              <FontAwesomeIcon icon={faPause} />
-              &nbsp;{capitalize(item.attributes!.activity as string)}
-              <span className="text-danger">
-                <FontAwesomeIcon
-                  icon={faCircle}
-                  fontVariant="danger"
-                  beatFade
-                  className="ms-1"
-                />
+        {openSlots.doc.data.map((item) => {
+          const activity = findInclude(
+            item.relationships?.activity
+              .data as unknown as ResourceIdentifierObject,
+            openSlots.doc.included || [],
+          );
+          return (
+            <Button
+              key={item.id}
+              variant="primary"
+              size="sm"
+              title="Stop tracking time"
+              onClick={() => {
+                if (!slotForm.doc!.data!.links) {
+                  slotForm.doc!.data!.links = {} satisfies LinksObject;
+                }
+                slotForm.doc!.data!.links!.self = apiPath(
+                  `/project/${props.projectId}/slot/${item.id}`,
+                );
+                slotForm.setValue("id", item.id);
+                slotForm.setValue("end", new Date().toISOString());
+                slotForm.handleSubmit(
+                  new Event("submit", {
+                    cancelable: true,
+                    bubbles: true,
+                  }) as unknown as FormEvent,
+                );
+              }}
+            >
+              <span className="text-nowrap">
+                <FontAwesomeIcon icon={faPause} />
+                &nbsp;{activity?.attributes?.name as string}
+                <span className="text-danger">
+                  <FontAwesomeIcon
+                    icon={faCircle}
+                    fontVariant="danger"
+                    beatFade
+                    className="ms-1"
+                  />
+                </span>
               </span>
-            </span>
-          </Button>
-        ))}
+            </Button>
+          );
+        })}
       </div>
     );
   }
@@ -96,8 +119,8 @@ export const TrackingButton = (props: TrackingButtonProps) => {
   const { projectId: _, ...buttonProps } = props;
   return (
     <Dropdown>
-      <Dropdown.Toggle {...buttonProps}>
-        <FontAwesomeIcon icon={faPlay} title="Start tracking"></FontAwesomeIcon>
+      <Dropdown.Toggle {...buttonProps} title="Start tracking time">
+        <FontAwesomeIcon icon={faPlay}></FontAwesomeIcon>
       </Dropdown.Toggle>
       <Dropdown.Menu>
         {activities &&
@@ -107,7 +130,10 @@ export const TrackingButton = (props: TrackingButtonProps) => {
             <Dropdown.Item
               key={item.id}
               onClick={() => {
-                slotForm.setValue("activity", item.id);
+                slotForm.setValue("activity", {
+                  id: item.id,
+                  type: "project.activity",
+                } satisfies ResourceIdentifierObject);
                 slotForm.handleSubmit(
                   new Event("submit", {
                     cancelable: true,
@@ -116,7 +142,11 @@ export const TrackingButton = (props: TrackingButtonProps) => {
                 );
               }}
             >
-              {capitalize(item.attributes!.value as string)}
+              <FontAwesomeIcon
+                icon={["fas", item.attributes!.icon as IconName]}
+                className="me-1"
+              />
+              {capitalize(item.attributes!.name as string)}
             </Dropdown.Item>
           ))}
       </Dropdown.Menu>

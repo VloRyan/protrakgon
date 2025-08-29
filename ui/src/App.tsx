@@ -43,6 +43,10 @@ const typeIcons = new Map<string, IconDefinition>([
   ["activity/break", faMugHot],
 ]);
 
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { fas } from "@fortawesome/free-solid-svg-icons";
+library.add(fas);
+
 const sidebarMenu: Menu[] = [
   new Menu("Clients", typeIcons.get("clients")!, [
     new MenuItem("Client list", typeIcons.get("client")!, "/client"),

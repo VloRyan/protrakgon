@@ -9,7 +9,7 @@ import (
 
 func WriteAsCSV(writer io.Writer, slots []*Slot) error {
 	csvWriter := csv.NewWriter(writer)
-	if err := csvWriter.Write([]string{"id", "projectId", "activity", "start", "end", "description"}); err != nil {
+	if err := csvWriter.Write([]string{"id", "start", "end", "activityName", "description", "billable", "amount"}); err != nil {
 		return err
 	}
 	for _, slot := range slots {
@@ -21,21 +21,11 @@ func WriteAsCSV(writer io.Writer, slots []*Slot) error {
 		if slot.Description != nil {
 			description = *slot.Description
 		}
-		data := []string{strconv.Itoa(slot.ID), strconv.Itoa(slot.ProjectID), activityToString(slot.Activity), slot.Start.Format(time.RFC3339), end, description}
+		data := []string{strconv.Itoa(slot.ID), slot.Start.Format(time.RFC3339), end, slot.Activity.Name, description, strconv.FormatBool(slot.Activity.Billable), strconv.FormatFloat(slot.Activity.Amount, 'f', 2, 64)}
 		if err := csvWriter.Write(data); err != nil {
 			return err
 		}
 	}
 	csvWriter.Flush()
 	return nil
-}
-
-func activityToString(activity Activity) string {
-	switch activity {
-	case ActivityBreak:
-		return "break"
-	case ActivityWork:
-		return "work"
-	}
-	return ""
 }

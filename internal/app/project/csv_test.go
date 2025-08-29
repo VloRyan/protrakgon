@@ -2,6 +2,8 @@ package project
 
 import (
 	"bytes"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,80 +11,69 @@ import (
 	"github.com/vloryan/go-libs/testhelper"
 )
 
+var activityBreak = &Activity{
+	ID:      2,
+	Project: defaultProject,
+	Name:    "Break",
+}
+
 func TestWriteAsCSV(t *testing.T) {
 	tests := []struct {
 		name    string
 		slots   []*Slot
-		want    string
 		wantErr bool
 	}{{
 		name: "GIVEN open slot THEN write as csv with empty end and desc",
 		slots: []*Slot{
 			{
-				ID:        0,
-				ProjectID: 1,
-				Activity:  ActivityWork,
-				Start:     testhelper.FixedNow,
+				ID:       0,
+				Activity: activityWork,
+				Start:    testhelper.FixedNow,
 			},
 		},
-		want: `id,projectId,activity,start,end,description
-0,1,work,` + testhelper.FixedNow.Format(time.RFC3339) + `,,
-`,
 	}, {
 		name: "GIVEN closed slot THEN write as csv with empty desc",
 		slots: []*Slot{
 			{
-				ID:        1,
-				ProjectID: 2,
-				Activity:  ActivityBreak,
-				Start:     testhelper.FixedNow.Add(1 * time.Minute),
-				End:       testhelper.Ptr(testhelper.FixedNow.Add(3 * time.Minute)),
+				ID:       1,
+				Activity: activityBreak,
+				Start:    testhelper.FixedNow.Add(1 * time.Minute),
+				End:      testhelper.Ptr(testhelper.FixedNow.Add(3 * time.Minute)),
 			},
 		},
-		want: `id,projectId,activity,start,end,description
-1,2,break,` + testhelper.FixedNow.Add(1*time.Minute).Format(time.RFC3339) + `,` + testhelper.FixedNow.Add(3*time.Minute).Format(time.RFC3339) + `,
-`,
 	}, {
 		name: "GIVEN slot with desc THEN write as csv with  desc",
 		slots: []*Slot{
 			{
 				ID:          2,
-				ProjectID:   3,
-				Activity:    ActivityBreak,
+				Project:     &Project{ID: 3},
+				Activity:    activityBreak,
 				Start:       testhelper.FixedNow,
 				Description: testhelper.Ptr("desc"),
 			},
 		},
-		want: `id,projectId,activity,start,end,description
-2,3,break,` + testhelper.FixedNow.Format(time.RFC3339) + `,,desc
-`,
 	}, {
 		name: "GIVEN multiple slots THEN write as csv with multiple lines",
 		slots: []*Slot{
 			{
-				ID:        1,
-				ProjectID: 2,
-				Activity:  ActivityBreak,
-				Start:     testhelper.FixedNow,
+				ID:       1,
+				Project:  &Project{ID: 2},
+				Activity: activityBreak,
+				Start:    testhelper.FixedNow,
 			},
 			{
-				ID:        2,
-				ProjectID: 3,
-				Activity:  ActivityBreak,
-				Start:     testhelper.FixedNow,
+				ID:       2,
+				Project:  &Project{ID: 3},
+				Activity: activityBreak,
+				Start:    testhelper.FixedNow,
 			},
 			{
-				ID:        3,
-				ProjectID: 4,
-				Activity:  ActivityBreak,
-				Start:     testhelper.FixedNow,
+				ID:       3,
+				Project:  &Project{ID: 4},
+				Activity: activityBreak,
+				Start:    testhelper.FixedNow,
 			},
 		},
-		want: `id,projectId,activity,start,end,description
-1,2,break,` + testhelper.FixedNow.Format(time.RFC3339) + `,,
-2,3,break,` + testhelper.FixedNow.Format(time.RFC3339) + `,,
-3,4,break,` + testhelper.FixedNow.Format(time.RFC3339) + `,,
-`,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -91,10 +82,55 @@ func TestWriteAsCSV(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("WriteAsCSV() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			want := header()
+			for _, slot := range tt.slots {
+				want += toLine(slot)
+			}
 			got := writer.String()
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("WriteAsCSV() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
+}
+
+func header() string {
+	return "id,start,end,activityName,description,billable,amount\n"
+}
+
+type LineType struct {
+	ID           int
+	Start        time.Time
+	End          *time.Time
+	ActivityName string
+	Description  string
+	Billable     bool
+	Amount       float64
+}
+
+func asLine(data []string) string {
+	return strings.Join(data, ",") + "\n"
+}
+
+func asString(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}
+
+func toLine(slot *Slot) string {
+	var end string
+	if slot.End != nil {
+		end = slot.End.Format(time.RFC3339)
+	}
+	return asLine([]string{
+		strconv.Itoa(slot.ID),
+		slot.Start.Format(time.RFC3339),
+		end,
+		slot.Activity.Name,
+		asString(slot.Description),
+		strconv.FormatBool(slot.Activity.Billable),
+		strconv.FormatFloat(slot.Activity.Amount, 'f', 2, 64),
+	})
 }

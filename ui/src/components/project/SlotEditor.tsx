@@ -5,13 +5,16 @@ import { useAlert, useResources } from "@vloryan/boot-api-ts/hooks/";
 import { capitalize } from "@vloryan/boot-api-ts/functions/";
 import { BootstrapFieldFactory } from "@vloryan/boot-api-ts/components/fields/";
 import { apiPath } from "../../functions/url.ts";
+import { ObjectLike } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 export const SlotEditor = ({ form }: { form: ObjectForm }) => {
   const { addApiErrorAlerts, clearAlerts } = useAlert();
   useEffect(() => {
     clearAlerts();
   }, []);
-  const activities = useResources(apiPath("/project/activity"));
+  const activities = useResources(
+    apiPath(`/project/${form.getValue("project.id")}/activity`),
+  );
   useEffect(() => {
     if (activities.error) {
       addApiErrorAlerts(activities.error);
@@ -24,9 +27,19 @@ export const SlotEditor = ({ form }: { form: ObjectForm }) => {
     activities.doc &&
     activities.doc.data
   ) {
-    activities.doc.data.forEach((doc) => {
-      activityTypes.set(doc.id, capitalize(doc.id));
+    activities.doc.data.forEach((activity) => {
+      activityTypes.set(
+        activity.id,
+
+        capitalize(activity.attributes!.name as string),
+      );
     });
+    if (form.getValue("activity") === undefined) {
+      form.setValue(
+        "activity",
+        activities.doc.data[0] as unknown as ObjectLike,
+      );
+    }
   }
   const fields = new BootstrapFieldFactory(form);
   return (
@@ -34,8 +47,9 @@ export const SlotEditor = ({ form }: { form: ObjectForm }) => {
       <Row>
         <fields.Select
           label="Activity"
-          name="activity"
+          name="activity.id"
           options={activityTypes}
+          style={{ fontFamily: "'FontAwesome', 'sans-serif'" }}
         />
         <fields.DateTime label="Start" name="start" required />
         <fields.DateTime label="End" name="end" />

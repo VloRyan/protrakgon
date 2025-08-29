@@ -2,38 +2,36 @@ import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { ItemActionCol } from "@vloryan/boot-api-ts/components/";
 import {
-  Included,
-  ResourceIdentifierObject,
-  ResourceObject,
-} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+  ItemActionCol,
+  ItemCellsFuncProps,
+} from "@vloryan/boot-api-ts/components/";
+import { ResourceIdentifierObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 import { JSX, ReactElement } from "react";
 import { TrackingButton } from "../../components/project/TrackingButton.tsx";
 import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi/";
-import { QueryKey } from "@tanstack/query-core";
 
 export function ProjectListPage() {
   const isMobile = window.screen.width < 576;
   return (
     <ItemListPage
       searchProperty="name"
-      cells={ProjectCell}
+      Cells={ProjectCell}
       opts={{ includes: !isMobile ? ["client"] : [] }}
     />
   );
 }
 
-function ProjectCell(
-  obj: ResourceObject,
-  included: Included,
-  queryKey: QueryKey,
-): ReactElement {
+function ProjectCell({
+  obj,
+  includes,
+  queryKey,
+}: ItemCellsFuncProps): ReactElement {
   let clientCol: JSX.Element | null = null;
   const client = findInclude(
     obj.relationships!.client.data as ResourceIdentifierObject,
-    included,
+    includes,
   );
   const objUrl = `/project/${obj.id}`;
   if (client) {

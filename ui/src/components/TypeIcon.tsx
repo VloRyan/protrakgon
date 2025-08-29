@@ -11,13 +11,20 @@ interface TypeIconProps {
 export function TypeIcon(props: TypeIconProps) {
   const icon = resolveIcon(props.type);
   if (icon === undefined) {
-    return <FontAwesomeIcon icon={faBomb} title="unknown"></FontAwesomeIcon>;
+    return (
+      <FontAwesomeIcon
+        icon={faBomb}
+        title="unknown"
+        className={props.className}
+        fade
+      />
+    );
   }
   return (
     <FontAwesomeIcon
       icon={icon}
       title={props.title ? props.title : props.type}
       className={props.className}
-    ></FontAwesomeIcon>
+    />
   );
 }

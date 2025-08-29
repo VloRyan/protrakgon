@@ -2,11 +2,18 @@ package project
 
 import (
 	"github.com/vloryan/go-libs/jsonapi"
-	"github.com/vloryan/protrakgon/internal/app/client"
+)
+
+var (
+	Projects   = NewService(NewRepository())
+	Activities = NewActivityService(NewActivityRepository())
+	Slots      = NewSlotService(NewSlotRepository())
 )
 
 func Handlers() []jsonapi.ResourceHandler {
 	return []jsonapi.ResourceHandler{
-		NewHandler(client.Clients),
+		NewHandler(),
+		NewSlotHandler(),
+		NewActivityHandler(),
 	}
 }

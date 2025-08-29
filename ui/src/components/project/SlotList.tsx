@@ -1,146 +1,199 @@
-import { Col } from "react-bootstrap";
+import { Col, Row } from "react-bootstrap";
 import { Link } from "wouter";
-import { TypeIcon } from "../TypeIcon.tsx";
-import { capitalize, padLeft } from "@vloryan/boot-api-ts/functions/";
+import { padLeft } from "@vloryan/boot-api-ts/functions/";
 import { formatDateString } from "@vloryan/boot-api-ts/functions/date.ts";
 import {
   ItemActionCol,
   ItemGroup,
   ItemList,
+  GroupHeaderProps,
+  ItemCellsFuncProps,
 } from "@vloryan/boot-api-ts/components/";
-import { ResourceObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+import {
+  Included,
+  ResourceObject,
+  CollectionResourceDoc,
+} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 import { FetchOpts } from "@vloryan/ts-jsonapi-form/jsonapi/";
-import { joinPath } from "@vloryan/boot-api-ts/functions";
+import { joinPath, toCurrency } from "@vloryan/boot-api-ts/functions";
+import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi";
+import { ResourceIdentifierObject } from "@vloryan/ts-jsonapi-form/jsonapi/model";
+import { IconName } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+import { QueryKey } from "@tanstack/query-core";
 
 export const SlotList = ({
   resourcesUrl,
   locationUrl,
   fetchOpts,
+  wrapText,
 }: {
   resourcesUrl: string;
   locationUrl: string;
   fetchOpts: FetchOpts;
+  wrapText: boolean;
 }) => {
   return (
     <ItemList
       resourcesUrl={resourcesUrl}
       locationUrl={locationUrl}
       opts={fetchOpts}
-      cells={(obj, _includes, queryKey) => {
-        const isOpen = new Date(obj.attributes!.end as string).getDate() == 1;
-        const timeDiff =
-          !isOpen && obj.attributes!.end
-            ? new Date(obj.attributes!.end as string).getTime() -
-              new Date(obj.attributes!.start as string).getTime()
-            : 0;
-        const objectUrl = joinPath(locationUrl, "/slot/${obj.id}");
-        return (
-          <>
-            <Col xs="1" sm="auto">
-              <Link to={locationUrl + `/slot/${obj.id}`}>
-                <TypeIcon
-                  type={
-                    obj.attributes?.activity
-                      ? "activity/" + (obj.attributes?.activity as string)
-                      : ""
-                  }
-                  className="me-1"
-                  title={capitalize(obj.attributes?.activity as string)}
-                />
-              </Link>
-            </Col>
-            <Col xs="6" sm="2" className="pe-0">
-              <Link to={locationUrl + `/slot/${obj.id}`}>
-                <div className="font-monospace justify-content-end">
-                  {formatTime(obj.attributes!.start! as string)}
-                  {obj.attributes!.end && !isOpen
-                    ? " - " + formatTime(obj.attributes!.end! as string)
-                    : null}
-                </div>
-              </Link>
-            </Col>
-            <Col
-              xs="3"
-              sm="2"
-              className="justify-content-end align-middle ps-0"
-            >
-              <div className="font-monospace justify-content-end middle small">
-                {timeDiff > 0 ? formatDiff(timeDiff) : null}
-              </div>
-            </Col>
-            <ItemActionCol objectUrl={objectUrl} queryKey={queryKey} />
-          </>
-        );
-      }}
-      groupFunc={(objs) => {
-        const groups: ItemGroup[] = [];
-        if (objs.length == 0) {
-          return [];
-        }
-        const firstItem = objs[0];
-        let currentDate = new Date(
-          (firstItem.attributes!["start"] as string).substring(0, 10),
-        );
-        let currentGroup = {
-          id: groups.length + "",
-          headerFunc: headerFunc,
-          data: [] as ResourceObject[],
-        } satisfies ItemGroup;
-        groups.push(currentGroup);
-        objs.forEach((obj) => {
-          const startDate = new Date(
-            (obj.attributes!["start"] as string).substring(0, 10),
-          );
-          if (startDate.getTime() == currentDate.getTime()) {
-            currentGroup.data.push(obj);
-          } else {
-            currentGroup = {
-              id: groups.length + "",
-              headerFunc: headerFunc,
-              data: [],
-            } satisfies ItemGroup;
-            currentGroup.data.push(obj);
-            currentDate = startDate;
-            groups.push(currentGroup);
-          }
-        });
-        return groups;
-      }}
+      Cells={({ obj, includes, queryKey }: ItemCellsFuncProps) =>
+        SlotCells(obj, includes, queryKey, locationUrl, wrapText)
+      }
+      groupFunc={groupByTimespan}
+      GroupHeader={SlotGroupHeader}
     />
   );
 };
-function headerFunc(group: ItemGroup) {
+
+const groupByTimespan = (doc: CollectionResourceDoc) => {
+  const groups: ItemGroup[] = [];
+  if (doc.data.length == 0) {
+    return [];
+  }
+  const firstItem = doc.data[0];
+  let currentDate = new Date(
+    (firstItem.attributes!["start"] as string).substring(0, 10),
+  );
+  let currentGroup = {
+    data: [] as ResourceObject[],
+  } satisfies ItemGroup;
+  groups.push(currentGroup);
+  doc.data.forEach((obj) => {
+    const startDate = new Date(
+      (obj.attributes!["start"] as string).substring(0, 10),
+    );
+    if (startDate.getTime() == currentDate.getTime()) {
+      currentGroup.data.push(obj);
+    } else {
+      currentGroup = {
+        data: [],
+      } satisfies ItemGroup;
+      currentGroup.data.push(obj);
+      currentDate = startDate;
+      groups.push(currentGroup);
+    }
+  });
+  return groups;
+};
+
+const SlotCells = (
+  obj: ResourceObject,
+  includes: Included,
+  queryKey: QueryKey,
+  locationUrl: string,
+  wrapText: boolean,
+) => {
+  const timeDiff = obj.attributes!.end
+    ? new Date(obj.attributes!.end as string).getTime() -
+      new Date(obj.attributes!.start as string).getTime()
+    : 0;
+  const objectUrl = joinPath(locationUrl, "/slot/${obj.id}");
+  const activity = findInclude(
+    obj.relationships?.activity.data as unknown as ResourceIdentifierObject,
+    includes,
+  );
+  return (
+    <>
+      <Col xs="3" sm="auto" className="p-0">
+        <Link to={locationUrl + `/slot/${obj.id}`}>
+          <div className="font-monospace justify-content-end">
+            {formatTime(obj.attributes!.start! as string)}
+            {obj.attributes!.end
+              ? " - " + formatTime(obj.attributes!.end! as string)
+              : null}
+          </div>
+        </Link>
+      </Col>
+      <Col xs="1" className="small pe-0 ">
+        <FontAwesomeIcon
+          icon={[
+            "fas",
+            activity ? (activity.attributes!.icon as IconName) : "bomb",
+          ]}
+          title={activity ? (activity.attributes?.name as string) : ""}
+          className="pe-1"
+        />
+        {activity?.attributes?.name as string}
+      </Col>
+      <Col xs="1" sm="auto" className="small">
+        {timeDiff > 0 ? formatDiff(timeDiff) : null}
+      </Col>
+      <Col className="small">
+        <div style={wrapText ? { whiteSpace: "pre-wrap" } : {}}>
+          {obj?.attributes?.description as string}
+        </div>
+      </Col>
+      <ItemActionCol objectUrl={objectUrl} queryKey={queryKey} />
+    </>
+  );
+};
+interface ActivityGroup {
+  activity: ResourceObject;
+  time: number;
+  sum: number;
+}
+function SlotGroupHeader({ group, includes }: GroupHeaderProps) {
   const firstItem = group.data![0];
   const startDate = new Date(
     (firstItem.attributes!["start"] as string).substring(0, 10),
   );
-  const timeByType = new Map<string, number>();
+  const groupsByType = new Map<string, ActivityGroup>();
   group.data?.forEach((obj) => {
-    const isOpen = new Date(obj.attributes!.end as string).getDate() == 1;
-    const activity = obj.attributes!.activity as string;
-    const timeDiff =
-      !isOpen && obj.attributes!.end
-        ? new Date(obj.attributes!.end as string).getTime() -
-          new Date(obj.attributes!.start as string).getTime()
-        : 0;
-    let sum = timeByType.get(activity);
-    sum = sum ? sum + timeDiff : timeDiff;
-    timeByType.set(activity, sum);
+    const activity = findInclude(
+      obj.relationships?.activity.data as unknown as ResourceIdentifierObject,
+      includes,
+    );
+    if (!activity) {
+      return;
+    }
+
+    const timeDiff = obj.attributes!.end
+      ? new Date(obj.attributes!.end as string).getTime() -
+        new Date(obj.attributes!.start as string).getTime()
+      : 0;
+
+    let group = groupsByType.get(activity!.id);
+    if (!group) {
+      group = { activity: activity, sum: 0, time: 0 };
+      groupsByType.set(activity!.id, group);
+    }
+    group!.time = group!.time + timeDiff;
+    if (activity.attributes!.billable) {
+      group.sum +=
+        Math.ceil(getHours(timeDiff)) * (activity.attributes!.amount as number);
+    }
+  });
+  let amountSum = 0.0;
+  groupsByType.forEach((group) => {
+    amountSum += group.sum;
   });
   return (
-    <>
-      <Col className="fw-bold pe-0" xs="4" sm="auto">
+    <Row className="align-items-center bg-primary-subtle">
+      <Col xs="4"></Col>
+      <Col xs="4" className="fw-bold text-center">
         {formatDateString(startDate.toISOString())}
       </Col>
+      <Col xs="1" className="text-end">
+        <small className="text-success">
+          {amountSum > 0 ? <b>{toCurrency(amountSum, "€")}</b> : ""}
+        </small>
+      </Col>
       <Col>
-        {Array.from(timeByType).map(([key, value], index) => (
+        {Array.from(groupsByType).map(([, group], index) => (
           <small key={index} className={index > 0 ? "ps-2" : ""}>
-            <TypeIcon type={"activity/" + key} title={capitalize(key)} />
-            <small>{formatDiff(value)}</small>
+            <FontAwesomeIcon
+              icon={["fas", group.activity!.attributes!.icon as IconName]}
+              title={group.activity!.attributes!.name as string}
+              className="ps-1"
+            />
+            {formatDiff(group.time)}
           </small>
         ))}
       </Col>
-    </>
+    </Row>
   );
 }
 
@@ -156,4 +209,11 @@ function formatDiff(diff: number) {
   return `${padLeft(hours, 2, "\u00A0") + "h"} ${
     minutes > 0 ? padLeft(minutes, 2, "\u00A0") + "m" : ""
   }`;
+}
+
+function getHours(diff: number) {
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  return hours + minutes / 60;
 }
