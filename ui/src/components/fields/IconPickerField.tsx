@@ -20,6 +20,7 @@ export const IconPickerField = ({
   const [invalid, setInvalid] = useState<boolean>(
     icons.indexOf(defaultValue as IconName) === -1,
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { as, children, ...controlProps } = props;
   return (
     <LabeledGroup {...props}>

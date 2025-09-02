@@ -166,6 +166,7 @@ func (h *SlotHandler) RegisterRoutes(route router.RouteElement) {
 	h.CRUDResourceHandler.RegisterRoutes(route)
 	route.GET("project/:projectID/slot/csv", h.DownloadCSV)
 }
+
 func NewSlotHandler() jsonapi.ResourceHandler {
 	api.Register("project.slot", func(tx db.Transaction, id *jsonapi.ResourceIdentifierObject) (*jsonapi.ResourceObject, error) {
 		iid, _ := strconv.ParseInt(id.ID, 10, 64)
@@ -196,8 +197,8 @@ func NewSlotHandler() jsonapi.ResourceHandler {
 				return nil
 			}),
 	}
-
 }
+
 func (h *SlotHandler) DownloadCSV(writer http.ResponseWriter, req *http.Request) {
 	data, err := h.GetAll(req)
 	if err != nil {
@@ -228,7 +229,8 @@ type SlotService interface {
 func NewSlotService(repo db.CRUDRepository[*Slot, *SlotFilter]) SlotService {
 	return &slotService{
 		CRUDService: api.NewCRUDService(repo),
-		now:         time.Now}
+		now:         time.Now,
+	}
 }
 
 type slotService struct {
