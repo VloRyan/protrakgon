@@ -203,8 +203,8 @@ func (r *repo[T, F]) GetAll(tx db.Transaction, page *pagination.Page, f F) ([]T,
 
 	where := f.ToCriteria().ToWhere()
 
-	if len(where.Clause) > 0 {
-		stmt += "\n" + where.SQL()
+	if !where.Empty() {
+		stmt += "\n" + where.Clause()
 	}
 	countStmt := "SELECT COUNT(*) " + stmt[strings.Index(stmt, "FROM"):]
 	if err := tx.Select(page, countStmt, where.Parameter); err != nil {

@@ -1,16 +1,13 @@
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
-import {
-  ItemActionCol,
-  ItemCellsFuncProps,
-  ItemList,
-} from "@vloryan/boot-api-ts/components/";
+import { ItemCellsFuncProps, ItemList } from "@vloryan/boot-api-ts/components/";
 import { Included } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 import { FetchOpts } from "@vloryan/ts-jsonapi-form/jsonapi/";
 import { joinPath } from "@vloryan/boot-api-ts/functions";
 import { faMoneyBill1, IconName } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { toCurrency } from "@vloryan/boot-api-ts/functions/";
+import { DeleteResourceButton } from "@vloryan/boot-api-ts/components";
 export const ActivityList = ({
   resourcesUrl,
   locationUrl,
@@ -48,7 +45,13 @@ export const ActivityList = ({
               ) : null}
             </Col>
             <Col>{obj.attributes?.description as string}</Col>
-            <ItemActionCol objectUrl={objectUrl} queryKey={queryKey} />
+            <Col sm="2" className="text-end pe-0">
+              <DeleteResourceButton
+                url={objectUrl}
+                queryKey={queryKey}
+                size="sm"
+              />
+            </Col>
           </>
         );
       }}

@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { padLeft } from "@vloryan/boot-api-ts/functions/";
 import { formatDateString } from "@vloryan/boot-api-ts/functions/date.ts";
 import {
-  ItemActionCol,
   ItemGroup,
   ItemList,
   GroupHeaderProps,
@@ -22,6 +21,7 @@ import { IconName } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { QueryKey } from "@tanstack/query-core";
+import { DeleteResourceButton } from "@vloryan/boot-api-ts/components";
 
 export const SlotList = ({
   resourcesUrl,
@@ -126,7 +126,9 @@ const SlotCells = (
           {obj?.attributes?.description as string}
         </div>
       </Col>
-      <ItemActionCol objectUrl={objectUrl} queryKey={queryKey} />
+      <Col sm="2" className="text-end pe-0">
+        <DeleteResourceButton url={objectUrl} queryKey={queryKey} size="sm" />
+      </Col>
     </>
   );
 };

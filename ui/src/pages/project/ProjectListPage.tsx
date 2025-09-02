@@ -3,8 +3,8 @@ import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
 import {
-  ItemActionCol,
   ItemCellsFuncProps,
+  DeleteResourceButton,
 } from "@vloryan/boot-api-ts/components/";
 import { ResourceIdentifierObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
@@ -33,7 +33,7 @@ function ProjectCell({
     obj.relationships!.client.data as ResourceIdentifierObject,
     includes,
   );
-  const objUrl = `/project/${obj.id}`;
+  const objectUrl = `/project/${obj.id}`;
   if (client) {
     clientCol = (
       <Col sm={1}>
@@ -53,7 +53,7 @@ function ProjectCell({
     <>
       <Col>
         <span className="text-nowrap">
-          <Link to={objUrl}>
+          <Link to={objectUrl}>
             <TypeIcon type={obj.type as string} className="me-1"></TypeIcon>
             {obj.attributes && obj.attributes.name
               ? (obj.attributes.name as string)
@@ -65,9 +65,15 @@ function ProjectCell({
       <Col className="d-md-block">
         <div className="d-none">{obj.attributes!.description! as string}</div>
       </Col>
-      <ItemActionCol objectUrl={objUrl} queryKey={queryKey}>
+      <Col className="pe-0 d-flex justify-content-end">
         <TrackingButton projectId={obj.id} variant="success" size="sm" />
-      </ItemActionCol>
+        <DeleteResourceButton
+          url={objectUrl}
+          queryKey={queryKey}
+          size="sm"
+          className="ms-1"
+        />
+      </Col>
     </>
   );
 }
