@@ -11,6 +11,7 @@ import { ResourceIdentifierObject } from "@vloryan/ts-jsonapi-form/jsonapi/model
 import { JSX, ReactElement } from "react";
 import { TrackingButton } from "../../components/project/TrackingButton.tsx";
 import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi/";
+import { useFilter } from "@vloryan/boot-api-ts/hooks";
 
 export function ProjectListPage() {
   const isMobile = window.screen.width < 576;
@@ -18,7 +19,7 @@ export function ProjectListPage() {
     <ItemListPage
       searchProperty="name"
       Cells={ProjectCell}
-      opts={{ includes: !isMobile ? ["client"] : [] }}
+      opts={{ includes: !isMobile ? ["client"] : [], filter: useFilter() }}
     />
   );
 }

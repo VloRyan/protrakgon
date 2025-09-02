@@ -4,7 +4,7 @@ import { TypeIcon } from "../../components/TypeIcon.tsx";
 
 import { ReactElement } from "react";
 
-import { usePage } from "@vloryan/boot-api-ts/hooks/";
+import { useFilter, usePage } from "@vloryan/boot-api-ts/hooks/";
 import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 import {
   DeleteResourceButton,
@@ -17,7 +17,7 @@ export function ClientListPage() {
     <ItemListPage
       searchProperty="name"
       Cells={ClientCell}
-      opts={{ page: page }}
+      opts={{ page: page, filter: useFilter() }}
     />
   );
 }
