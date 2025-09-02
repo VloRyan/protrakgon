@@ -3,6 +3,7 @@ package project
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/vloryan/go-libs/httpx"
@@ -65,7 +66,9 @@ func (f *ActivityFilter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("id").Eq(*f.ID))
 	}
 	if f.Name != "" {
-		criteria = criteria.And(tableFilter.Column("name").Eq(f.Name))
+		criteria = criteria.And(tableFilter.Column("name").
+			ToLower().
+			Like("%" + strings.ToLower(f.Name) + "%"))
 	}
 	if f.ProjectID != nil {
 		criteria = criteria.And(tableFilter.Column("project_id").Eq(*f.ProjectID))

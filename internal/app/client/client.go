@@ -2,6 +2,7 @@ package client
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/vloryan/go-libs/jsonapi"
@@ -55,10 +56,14 @@ func (f *Filter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("id").Eq(*f.ID))
 	}
 	if f.Name != "" {
-		criteria = criteria.And(tableFilter.Column("name").Like(f.Name))
+		criteria = criteria.And(tableFilter.Column("name").
+			ToLower().
+			Like("%" + strings.ToLower(f.Name) + "%"))
 	}
 	if f.Description != nil {
-		criteria = criteria.And(tableFilter.Column("description").Like(*f.Description))
+		criteria = criteria.And(tableFilter.Column("description").
+			ToLower().
+			Like("%" + strings.ToLower(*f.Description) + "%"))
 	}
 	return criteria
 }

@@ -3,6 +3,7 @@ package project
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/vloryan/go-libs/jsonapi"
@@ -67,13 +68,17 @@ func (f *Filter) ToCriteria() filter.Criteria {
 		criteria.And(tableFilter.Column("id").Eq(*f.ID))
 	}
 	if f.Name != "" {
-		criteria.And(tableFilter.Column("name").Eq(f.Name))
+		criteria = criteria.And(tableFilter.Column("name").
+			ToLower().
+			Like("%" + strings.ToLower(f.Name) + "%"))
 	}
 	if f.ClientID != nil {
 		criteria.And(tableFilter.Column("clientId").Eq(*f.ClientID))
 	}
 	if f.Description != nil {
-		criteria.And(tableFilter.Column("description").Eq(*f.Description))
+		criteria = criteria.And(tableFilter.Column("description").
+			ToLower().
+			Like("%" + strings.ToLower(*f.Description) + "%"))
 	}
 	return criteria
 }
