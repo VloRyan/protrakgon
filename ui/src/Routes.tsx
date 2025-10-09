@@ -4,6 +4,7 @@ import { ProjectListPage } from "./pages/project/ProjectListPage.tsx";
 import { SlotPage } from "./pages/project/SlotPage.tsx";
 import { ClientListPage } from "./pages/client/ClientListPage.tsx";
 import { ClientPage } from "./pages/client/ClientPage.tsx";
+import { ActivityPage } from "./pages/project/ActivityPage.tsx";
 
 export function Routes() {
   return [...ClientRoutes(), ...ProjectRoutes()];
@@ -19,6 +20,7 @@ export function Routes() {
       <Route path="/project" component={ProjectListPage} />,
       <Route path="/project/:id" component={ProjectPage} />,
       <Route path="/project/:id/slot/:id" component={SlotPage} />,
+      <Route path="/project/:id/activity/:id" component={ActivityPage} />,
     ];
   }
 }

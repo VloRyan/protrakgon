@@ -31,7 +31,14 @@ import { Page404 } from "@vloryan/boot-api-ts/pages/";
 import { initIcons } from "@vloryan/boot-api-ts/components/icons/";
 import { joinPath } from "@vloryan/boot-api-ts/functions";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const typeIcons = new Map<string, IconDefinition>([
   ["clients", faPeopleGroup],
@@ -42,6 +49,10 @@ const typeIcons = new Map<string, IconDefinition>([
   ["activity/work", faBriefcase],
   ["activity/break", faMugHot],
 ]);
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { fas } from "@fortawesome/free-solid-svg-icons";
+library.add(fas);
 
 const sidebarMenu: Menu[] = [
   new Menu("Clients", typeIcons.get("clients")!, [

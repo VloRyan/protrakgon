@@ -2,39 +2,39 @@ import { ItemListPage } from "@vloryan/boot-api-ts/pages";
 import { Col } from "react-bootstrap";
 import { Link } from "wouter";
 import { TypeIcon } from "../../components/TypeIcon.tsx";
-import { ItemActionCol } from "@vloryan/boot-api-ts/components/";
 import {
-  Included,
-  ResourceIdentifierObject,
-  ResourceObject,
-} from "@vloryan/ts-jsonapi-form/jsonapi/model/";
+  ItemCellsFuncProps,
+  DeleteResourceButton,
+} from "@vloryan/boot-api-ts/components/";
+import { ResourceIdentifierObject } from "@vloryan/ts-jsonapi-form/jsonapi/model/";
 
 import { JSX, ReactElement } from "react";
 import { TrackingButton } from "../../components/project/TrackingButton.tsx";
 import { findInclude } from "@vloryan/ts-jsonapi-form/jsonapi/";
-import { QueryKey } from "@tanstack/query-core";
+import { useFilter } from "@vloryan/boot-api-ts/hooks";
 
 export function ProjectListPage() {
   const isMobile = window.screen.width < 576;
   return (
     <ItemListPage
       searchProperty="name"
-      itemCellsFunc={ProjectCell}
-      opts={{ includes: !isMobile ? ["client"] : [] }}
+      Cells={ProjectCell}
+      opts={{ includes: !isMobile ? ["client"] : [], filter: useFilter() }}
     />
   );
 }
 
-function ProjectCell(
-  obj: ResourceObject,
-  included: Included,
-  queryKey: QueryKey,
-): ReactElement {
+function ProjectCell({
+  obj,
+  includes,
+  queryKey,
+}: ItemCellsFuncProps): ReactElement {
   let clientCol: JSX.Element | null = null;
   const client = findInclude(
     obj.relationships!.client.data as ResourceIdentifierObject,
-    included,
+    includes,
   );
+  const objectUrl = `/project/${obj.id}`;
   if (client) {
     clientCol = (
       <Col sm={1}>
@@ -54,7 +54,7 @@ function ProjectCell(
     <>
       <Col>
         <span className="text-nowrap">
-          <Link to={`/project/${obj.id}`}>
+          <Link to={objectUrl}>
             <TypeIcon type={obj.type as string} className="me-1"></TypeIcon>
             {obj.attributes && obj.attributes.name
               ? (obj.attributes.name as string)
@@ -66,9 +66,15 @@ function ProjectCell(
       <Col className="d-md-block">
         <div className="d-none">{obj.attributes!.description! as string}</div>
       </Col>
-      <ItemActionCol object={obj} queryKey={queryKey}>
+      <Col className="pe-0 d-flex justify-content-end">
         <TrackingButton projectId={obj.id} variant="success" size="sm" />
-      </ItemActionCol>
+        <DeleteResourceButton
+          url={objectUrl}
+          queryKey={queryKey}
+          size="sm"
+          className="ms-1"
+        />
+      </Col>
     </>
   );
 }

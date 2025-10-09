@@ -7,8 +7,10 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/vloryan/go-libs/jsonapi"
-	"github.com/vloryan/go-libs/sqlx/pagination"
+	"github.com/vloryan/go-libs/sqlx/filter"
+	"github.com/vloryan/go-libs/sqlx/statement"
 	"github.com/vloryan/protrakgon/internal/app/client"
+	"github.com/vloryan/protrakgon/internal/app/server/api"
 	"github.com/vloryan/protrakgon/internal/app/server/db"
 )
 
@@ -17,6 +19,13 @@ type Project struct {
 	Name        string         `json:"name,omitempty"`
 	Client      *client.Client `json:"client,omitempty"`
 	Description *string        `json:"description,omitempty"`
+}
+
+func (p *Project) Validate() error {
+	if p.Client == nil || p.Client.ID == 0 {
+		return errors.New("client required")
+	}
+	return nil
 }
 
 func (p *Project) SetIdentifier(id *jsonapi.ResourceIdentifierObject) {
@@ -52,179 +61,51 @@ type Filter struct {
 	Description *string `form:"filter[description]"`
 }
 
-type Service interface {
-	Save(tx db.Transaction, project *Project) error
-	GetByID(tx db.Transaction, id int) (*Project, error)
-	GetAll(tx db.Transaction, page *pagination.Page, filter *Filter) ([]*Project, error)
-	Delete(tx db.Transaction, id int) error
+func (f *Filter) ToCriteria() filter.Criteria {
+	criteria := filter.New()
+	tableFilter := filter.NewTable("project")
+	if f.ID != nil {
+		criteria.And(tableFilter.Column("id").Eq(*f.ID))
+	}
+	if f.Name != "" {
+		criteria = criteria.And(tableFilter.Column("name").
+			ToLower().
+			Like("%" + strings.ToLower(f.Name) + "%"))
+	}
+	if f.ClientID != nil {
+		criteria.And(tableFilter.Column("clientId").Eq(*f.ClientID))
+	}
+	if f.Description != nil {
+		criteria = criteria.And(tableFilter.Column("description").
+			ToLower().
+			Like("%" + strings.ToLower(*f.Description) + "%"))
+	}
+	return criteria
 }
 
-func NewService(repository db.CRUDRepository[*Project, *Filter]) Service {
-	return &service{repo: repository}
+func NewHandler() jsonapi.ResourceHandler {
+	return api.NewCRUDResourceHandler[*Project, *Filter](Projects, "/project")
 }
 
-type service struct {
-	repo db.CRUDRepository[*Project, *Filter]
+func NewService(repository db.CRUDRepository[*Project, *Filter]) api.CRUDService[*Project, *Filter] {
+	return api.NewCRUDService(repository)
 }
-
-func (d *service) Save(tx db.Transaction, project *Project) error {
-	return d.repo.Save(tx, project)
-}
-
-func (d *service) GetByID(tx db.Transaction, projectID int) (*Project, error) {
-	return d.repo.GetByID(tx, projectID)
-}
-
-func (d *service) GetAll(tx db.Transaction, page *pagination.Page, filter *Filter) ([]*Project, error) {
-	return d.repo.GetAll(tx, page, filter)
-}
-
-func (d *service) Delete(tx db.Transaction, id int) error {
-	return d.repo.Delete(tx, id)
-}
-
-type Repository struct{}
 
 func NewRepository() db.CRUDRepository[*Project, *Filter] {
-	return &Repository{}
-}
-
-func (r *Repository) Save(tx db.Transaction, item *Project) error {
-	if item.ID == 0 {
-		stmt := `INSERT INTO project (name, client_id, description) 
-				  VALUES (:name, :client.id, :description)`
-
-		result, err := tx.Exec(stmt, item)
-		if err != nil {
-			return err
-		}
-		id, err := result.LastInsertId()
-		if err != nil {
-			return err
-		}
-		item.ID = int(id)
-		return nil
-	} else {
-		stmt := `UPDATE project 
-				    SET
-						name 		= :name, 
-						client_id = :client.id,
-						description = :description
-				  WHERE 
-				        id = :id`
-
-		result, err := tx.Exec(stmt, item)
-		if err != nil {
-			return err
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if affected == 0 {
-			return errors.New("update failed: 0 rows affected")
-		}
-	}
-	return nil
-}
-
-func (r *Repository) GetByID(tx db.Transaction, projectID int) (*Project, error) {
-	project := &Project{}
-	stmt := `SELECT id, name, client_id AS ` + "`client.id`" + `, description
-			   FROM project 
-			  WHERE id = :id`
-
-	if err := tx.Select(project, stmt, map[string]any{"id": projectID}); err != nil {
-		return nil, err
-	}
-	if project.ID == 0 {
-		return nil, nil
-	}
-	return project, nil
-}
-
-func (r *Repository) GetAll(tx db.Transaction, page *pagination.Page, filter *Filter) ([]*Project, error) {
-	items := make([]*Project, 0, 10)
-	stmt := `SELECT id, name, client_id AS ` + "`client.id`" + `, description 
-             FROM project`
-	countStmt := `SELECT COUNT(*) AS total_count 
-				    FROM project`
-
-	whereClause, whereParams := r.toWhereClause(filter)
-	selectParams := make(map[string]any)
-	for k, v := range whereParams {
-		selectParams[k] = v
-	}
-	if len(whereClause) > 0 {
-		stmt += "\n" + whereClause
-		countStmt += "\n" + whereClause
-	}
-
-	if page.Limit != -1 {
-		stmt += "\nLIMIT :limit"
-		selectParams["limit"] = page.Limit
-		if page.Offset != 0 {
-			stmt += "\nOFFSET :offset"
-			selectParams["offset"] = page.Offset * page.Limit
-		}
-	}
-	if len(whereClause) > 0 {
-		if err := tx.Select(page, countStmt, whereParams); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := tx.Select(page, countStmt); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Select(&items, stmt, selectParams); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func (r *Repository) Delete(tx db.Transaction, id int) error {
-	stmt := `DELETE 
-             FROM project
-             WHERE id = :id`
-
-	result, err := tx.Exec(stmt, map[string]interface{}{"id": id})
-	if err != nil {
-		return err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected != 1 {
-		return errors.New("delete failed: " + strconv.Itoa(int(affected)) + " rows affected")
-	}
-	return err
-}
-
-func (r *Repository) toWhereClause(filter *Filter) (string, map[string]any) {
-	clause := ""
-	parts := make([]string, 0, 10)
-	m := make(map[string]any)
-	if filter.ID != nil {
-		m["id"] = filter.ID
-		parts = append(parts, "id = :id")
-	}
-	if filter.Name != "" {
-		m["name"] = "%" + strings.ToLower(filter.Name) + "%"
-		parts = append(parts, "name LIKE :name")
-	}
-	if filter.ClientID != nil {
-		m["clientId"] = *filter.ClientID
-		parts = append(parts, "clientId = :clientId")
-	}
-	if filter.Description != nil {
-		m["description"] = "%" + strings.ToLower(*filter.Description) + "%"
-		parts = append(parts, "description LIKE :description")
-	}
-	if len(parts) > 0 {
-		clause = "WHERE " + strings.Join(parts, " AND ")
-	}
-	return clause, m
+	return api.NewCRUDRepository[*Project, *Filter](api.RepositoryParams{
+		TableName:   "project",
+		IDColumn:    "id",
+		ColumnNames: []string{"name", "client_id", "description"},
+		Joins: []statement.TableJoinDefinition{{
+			Table: statement.ObjectName{
+				Name: "client",
+			},
+			OnConditions: []string{"client.id = project.client_id"},
+			SelectFields: []statement.ColumnExpression{
+				{Name: "id", Alias: "Client.ID"},
+				{Name: "name", Alias: "Client.Name"},
+				{Name: "description", Alias: "Activity.Description"},
+			},
+		}},
+	})
 }
