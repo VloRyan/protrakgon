@@ -1,0 +1,7 @@
+<section class="results">
+  <ul>
+  @for(object of objectList(); track $index) {
+    <li><a [routerLink]="['/client', object.id]">{{object.attributes?object.attributes['name']:""}}</a></li>
+  }
+  </ul>
+</section>

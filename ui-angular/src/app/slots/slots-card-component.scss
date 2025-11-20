@@ -1,0 +1,8 @@
+tr.row-hover:not(.action-col):hover {
+  background: darkslategrey;
+  cursor: pointer;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
