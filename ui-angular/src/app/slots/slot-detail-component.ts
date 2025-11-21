@@ -1,14 +1,13 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {DocumentForm, DocumentFormProps} from '../../../../../../ts/ts-jsonapi-form/form';
+import {Component, inject, signal} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {JsonApiService} from '../json-api.service';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatSelect} from '@angular/material/select';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {ResourceObject, SingleResourceDoc} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {DocumentFormComponent} from '../document-form/document-form-component';
 
 
 @Component({
@@ -30,7 +29,7 @@ import {ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model
             <mat-label>Activity</mat-label>
             <select matNativeControl name="activity.id" #activitySelect (input)="onInput($event)">
               @for (activity of this.activities(); track $index) {
-                @if (this.form()?.getValue("activity.id") == activity.id) {
+                @if (formValue("activity.id") == activity.id) {
                   <option [value]="activity.id" selected>
                     <fa-icon [icon]="['fas', (activity.attributes!['icon']! +'')]" [style.padding-right.px]="2"/>
                     {{ activity.attributes!['name'] }}
@@ -59,7 +58,7 @@ import {ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model
           <mat-form-field floatLabel="always" [style.width.%]=100>
             <mat-label>Description</mat-label>
             <textarea matNativeControl name="description" rows="2"
-                      [defaultValue]="form() != null &&  form()?.getValue('description')? form()?.getValue('description'):''"
+                      [defaultValue]="formValue('description')"
                       (input)="onInput($event)"></textarea>
           </mat-form-field>
           </form>
@@ -69,76 +68,41 @@ import {ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model
   `,
   styleUrl: './slot-detail-component.scss',
 })
-export class SlotDetailComponent implements OnInit {
+export class SlotDetailComponent extends DocumentFormComponent {
   activitySelect = new MatSelect();
-  route: ActivatedRoute = inject(ActivatedRoute);
-  form = signal<DocumentForm | null>(null);
-  jsonApiService: JsonApiService = inject(JsonApiService);
-  router: Router = inject(Router);
   activities= signal<ResourceObject[]>([]);
-
-  private snackBar = inject(MatSnackBar);
+  route: ActivatedRoute = inject(ActivatedRoute);
+  jsonApiService: JsonApiService = inject(JsonApiService);
 
   constructor() {
+    super("Slot", "", "")
+    const projectId = this.route.snapshot.params['project-id'];
+    this.baseUrl = "/project/" + projectId + "/slot"
+    this.baseApiUrl = "api/v1/project/" + projectId + "/slot"
+  }
+
+  override ngOnInit() {
+    super.ngOnInit();
     let projectId = this.route.snapshot.params['project-id'];
-    this.jsonApiService.GetProjectSlot(projectId, this.route.snapshot.params['id']).then((doc) => {
+    this.jsonApiService.GetProjectActivities(projectId).then((doc) => {
       let theDoc = doc ? doc : null;
-      let props = {
-        document: theDoc,
-        apiUrl: "api/v1/project/" + projectId + "/slot" + (theDoc?.data.id ? "/" + theDoc!.data.id : ""),
-        onSubmitSuccess: (object) => {
-          this.snackBar.open('Activity created successfully.', '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['success-snackbar'],
-            duration: 3000,
-          });
-          this.router.navigate(["/project" ,projectId , "slot", object.id]).then(
-            () => {
-              this.form.set(new DocumentForm({
-                document: {...theDoc!, data: object},
-                apiUrl: "api/v1/project/" + projectId + "/slot/" + object.id
-              }                      satisfies DocumentFormProps));
-            }
-          );
-        },
-        onSubmitError: (error) => {
-          this.snackBar.open('Failed to create slot: ' + error.message, '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-        }
-      } satisfies DocumentFormProps;
-      let form = new DocumentForm(props);
-      this.form.set(form);
+      this.activities.set(theDoc?.data??[]);
+      this.activitySelect.value = this.form()?.getValue("activity.id")!= undefined?this.form()?.getValue("activity.id"):null;
     });
   }
 
-ngOnInit() {
-  let projectId = this.route.snapshot.params['project-id'];
-  this.jsonApiService.GetProjectActivities(projectId).then((doc) => {
-    let theDoc = doc ? doc : null;
-    this.activities.set(theDoc?.data??[]);
-    this.activitySelect.value = this.form()?.getValue("activity.id")!= undefined?this.form()?.getValue("activity.id"):null;
-  });
-}
-
-  onInput(ev: Event) {
-
-    this.form()?.handleChangeEvent(ev);
-  }
-
-  onSubmit(ev: Event) {
-    this.form()?.handleSubmit(ev)
-  }
   formValueAsLocalDateTime(name:string){
-    let value =this.form()?.getValue(name) as string|undefined;
+    let value =this.formValue(name) as string|undefined;
     if(!value){
       return null;
     }
     let date = new Date(value);
     return date.toISOString().substring(0,11)+date.toLocaleTimeString().substring(0,5);
   }
+
+  protected override loadDocument(): Promise<SingleResourceDoc | undefined> {
+    let projectId = this.route.snapshot.params['project-id'];
+    return this.jsonApiService.GetProjectSlot(projectId, this.route.snapshot.params['id'])
+  }
 }
+

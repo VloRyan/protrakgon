@@ -1,11 +1,6 @@
-import {Component, inject, signal} from '@angular/core';
+import {Component, inject} from '@angular/core';
 
-import {
-  ApiError,
-  CollectionResourceDoc,
-  Included,
-  ResourceObject
-} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {Document, Included, PrimaryData} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
 import {JsonApiService} from '../json-api.service';
 import {
   MatCell,
@@ -22,10 +17,10 @@ import {
 import {RouterLink} from '@angular/router';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {MatMiniFabButton} from '@angular/material/button';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {ProjectClientCell} from './client.cell.component';
 import {MatGridList, MatGridTile} from '@angular/material/grid-list';
 import {TrackSlotButton} from './track-slot-button';
+import {DocumentTableComponent} from '../document-form/document-table-component';
 
 
 @Component({
@@ -54,7 +49,7 @@ import {TrackSlotButton} from './track-slot-button';
   ],
   template: `
     <section class="results">
-      <table mat-table class="results-table mat-elevation-z8" [dataSource]="itemList()">
+      <table mat-table class="results-table mat-elevation-z8" [dataSource]="rows()">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef> Name</th>
           <td mat-cell *matCellDef="let item">{{ item.attributes.name }}</td>
@@ -70,7 +65,7 @@ import {TrackSlotButton} from './track-slot-button';
           <td mat-cell *matCellDef="let item">{{ item.attributes.description }}</td>
         </ng-container>
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef ></th>
+          <th mat-header-cell *matHeaderCellDef></th>
           <td class="action-col" mat-cell *matCellDef="let item;" style="text-align: right; width: 100px; padding: 0">
             <span class="action-spacer"></span>
             <mat-grid-list cols="2" style="width: 100px" rowHeight="40px">
@@ -93,49 +88,25 @@ import {TrackSlotButton} from './track-slot-button';
   `,
   styleUrl: './project.component.scss',
 })
-export class ProjectComponent {
+export class ProjectComponent extends DocumentTableComponent {
   displayedColumns: string[] = ['name', 'client', 'description', 'actions'];
-  itemList = signal<ResourceObject[]>([]);
   jsonApiService: JsonApiService = inject(JsonApiService);
-included : Included|undefined = undefined;
-  private snackBar = inject(MatSnackBar);
+  included: Included | undefined = undefined;
 
   constructor() {
-    this.jsonApiService.GetProjects().then((doc: CollectionResourceDoc | undefined) => {
-      this.included = doc?.included;
-      this.itemList.set(doc ? doc.data : []);
-
-    });
+    super("Project");
   }
 
-  deleteItem(event: PointerEvent, id: string) {
-    event.stopPropagation();
-    this.jsonApiService.DeleteProject(id).then(_r => {
-      this.snackBar.open('Project deleted', '', {
-        horizontalPosition: 'end',
-        verticalPosition: 'top',
-        panelClass: ['success-snackbar'],
-        duration: 3000,
-      });
-      this.jsonApiService.GetClients().then((doc: CollectionResourceDoc | undefined) => {
-        this.itemList.set(doc ? doc.data : []);
-      });
-    }).catch((err) => {
-      if (err instanceof ApiError) {
-        for (const oneError of (err as ApiError).errors) {
-          this.snackBar.open(oneError.title ? oneError.title : "Error occurred", '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-          console.log(oneError.detail);
-        }
-      } else {
-        console.log(err);
-      }
+  override async loadDocument() {
+    const doc = await this.jsonApiService.GetProjects();
+    if (doc) {
+      this.included = doc.included;
+    }
+    return doc;
+  }
 
-    });
+  protected override deleteObject(id: string): Promise<Document<PrimaryData> | null> {
+    return this.jsonApiService.DeleteProject(id);
   }
 }
 

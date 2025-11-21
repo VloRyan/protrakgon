@@ -1,13 +1,11 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {JsonApiService} from '../json-api.service';
-import {DocumentForm, DocumentFormProps} from '../../../../../../ts/ts-jsonapi-form/form';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatAutocomplete, MatAutocompleteTrigger, MatOption} from '@angular/material/autocomplete';
-import {ObjectLike, ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {ObjectLike, ResourceObject, SingleResourceDoc} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {AppService} from '../app.service';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
@@ -15,6 +13,7 @@ import {finalize} from 'rxjs';
 import {ActivitiesCardComponent} from '../activities/activities-card-component';
 import {SlotsCardComponent} from '../slots/slots-card-component';
 import {EmptyFetchOpts, extractFetchOpts, FetchOpts} from '../../../../../../ts/ts-jsonapi-form/jsonapi/';
+import {DocumentFormComponent} from '../document-form/document-form-component';
 
 @Component({
   selector: 'app-project-detail',
@@ -37,19 +36,19 @@ import {EmptyFetchOpts, extractFetchOpts, FetchOpts} from '../../../../../../ts/
         <form #projectForm id="item-form" (submit)="onSubmit($event)">
           <mat-form-field [style.width.%]=49 [style.padding-right.%]="1">
             <mat-label>Name</mat-label>
-            <input matInput name="name" [defaultValue]="form() != null ? form()?.getValue('name'):''"
+            <input matInput name="name" [defaultValue]="formValue('name')"
                    (input)="onInput($event)">
           </mat-form-field>
           <mat-form-field [style.width.%]=49 [style.padding-left.%]="1">
             <mat-label>Client</mat-label>
             <input matInput placeholder="Choose a client" (keyup)="updateOptions($event)" [matAutocomplete]="auto"
-                   [formControl]="searchInput" name="client">
+                   [formControl]="clientSearchInput" name="client">
           </mat-form-field>
           <br/>
           <mat-form-field [style.width.%]=100>
             <mat-label>Description</mat-label>
             <input matInput name="description"
-                   [defaultValue]="form() != null &&  form()?.getValue('description')? form()?.getValue('description'):''"
+                   [defaultValue]="formValue('description')"
                    (input)="onInput($event)">
           </mat-form-field>
 
@@ -80,56 +79,22 @@ import {EmptyFetchOpts, extractFetchOpts, FetchOpts} from '../../../../../../ts/
   `,
   styleUrl: './project-detail.scss',
 })
-export class ProjectDetail implements OnInit {
-  route: ActivatedRoute = inject(ActivatedRoute);
-  form = signal<DocumentForm | null>(null);
+export class ProjectDetail extends DocumentFormComponent{
   jsonApiService: JsonApiService = inject(JsonApiService);
   appService: AppService = inject(AppService);
-  router: Router = inject(Router);
   filteredObjects: ResourceObject[] = [];
-  isLoading = signal<boolean>(false);
   filter: ObjectLike = {};
   fetchOpts = EmptyFetchOpts;
-  protected searchInput: FormControl = new FormControl();
-  private snackBar = inject(MatSnackBar);
+  route: ActivatedRoute = inject(ActivatedRoute);
+  protected clientSearchInput: FormControl = new FormControl();
 
   constructor() {
-    this.jsonApiService.GetProject(this.route.snapshot.params['id']).then((doc) => {
-      let theDoc = doc ? doc : null;
-      let props = {
-        document: theDoc,
-        apiUrl: "api/v1/project" + (theDoc?.data.id ? "/" + theDoc!.data.id : ""),
-        onSubmitSuccess: (object) => {
-          this.snackBar.open('Project created successfully.', '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['success-snackbar'],
-            duration: 3000,
-          });
-          this.router.navigate(["/project/", object.id]).then(
-            () => {
-              this.form.set(new DocumentForm({
-                document: {...theDoc!, data: object},
-                apiUrl: "api/v1/client/" + object.id
-              }                      satisfies DocumentFormProps));
-            }
-          );
-        },
-        onSubmitError: (error) => {
-          this.snackBar.open('Failed to crate client: ' + error.message, '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-        }
-      } satisfies DocumentFormProps;
-      let form = new DocumentForm(props);
-      this.searchInput.setValue(form.getValue("client"));
-      this.form.set(form);
-    });
+    super("Project", "/project/", "api/v1/project/")
+  }
 
-    this.searchInput.valueChanges.subscribe(value => {
+  override afterLoadForm() {
+    this.clientSearchInput.setValue(this.formValue("client"));
+    this.clientSearchInput.valueChanges.subscribe(value => {
       if (!this.form()) {
         return;
       }
@@ -137,7 +102,8 @@ export class ProjectDetail implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
+    super.ngOnInit();
     let queryString = "";
     for (const k in this.route.snapshot.queryParams) {
       if (queryString.length > 0) {
@@ -179,11 +145,17 @@ export class ProjectDetail implements OnInit {
     return ""
   }
 
+  protected override loadDocument(): Promise<SingleResourceDoc | undefined> {
+    return  this.jsonApiService.GetProject(this.route.snapshot.params['id'])
+  }
+
+
+/*
   onInput(ev: Event) {
     this.form()?.handleChangeEvent(ev);
   }
 
   onSubmit(ev: Event) {
     this.form()?.handleSubmit(ev);
-  }
+  }*/
 }

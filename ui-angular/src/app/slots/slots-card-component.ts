@@ -1,11 +1,11 @@
-import {Component, inject, input, OnInit, signal} from '@angular/core';
+import {Component, inject, input, signal} from '@angular/core';
 import {MatCard, MatCardContent, MatCardHeader, MatCardTitle} from '@angular/material/card';
 import {JsonApiService} from '../json-api.service';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {
-  ApiError,
   CollectionResourceDoc,
+  Document,
   ObjectLike,
+  PrimaryData,
   ResourceIdentifierObject,
   ResourceObject
 } from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
@@ -31,6 +31,7 @@ import {FormsModule} from '@angular/forms';
 
 import {MatSidenav, MatSidenavContainer} from '@angular/material/sidenav';
 import {SlotsFilterComponent} from './slots-filter-component';
+import {DocumentTableComponent, Group} from '../document-form/document-table-component';
 
 export enum Comparator {
   Eq = 0,
@@ -46,11 +47,6 @@ export interface ActivitySummary {
   name: string;
   icon: string;
   sum: number;
-}
-
-export interface Group {
-  caption: string;
-  activities: ActivitySummary[];
 }
 
 @Component({
@@ -113,7 +109,7 @@ export interface Group {
           @if (isLoading()) {
             <mat-spinner></mat-spinner>
           } @else {
-            <table mat-table [dataSource]="itemList()" class="results-table mat-elevation-z8">
+            <table mat-table [dataSource]="rows()" class="results-table mat-elevation-z8">
               <ng-container matColumnDef="activity">
                 <th mat-header-cell *matHeaderCellDef>Activity</th>
                 <td mat-cell *matCellDef="let item">
@@ -153,7 +149,7 @@ export interface Group {
               <ng-container matColumnDef="groupHeader">
                 <td colspan="999" mat-cell *matCellDef="let group" style="text-align: center;">
                   <strong [style.padding-right.px]="2">{{ group.caption }}</strong>
-                  @for (summary of group.activities; track $index) {
+                  @for (summary of group.data; track $index) {
                     <fa-icon [icon]="['fas',summary.icon+'']"/>{{ this.formatDuration(summary.sum) }}
                   }
                 </td>
@@ -170,7 +166,8 @@ export interface Group {
   `,
   styleUrl: './slots-card-component.scss',
 })
-export class SlotsCardComponent implements OnInit {
+export class SlotsCardComponent extends DocumentTableComponent {
+
 
   displayedColumns: string[] = ['activity', 'duration', 'description', 'actions'];
   projectId = input.required<string>();
@@ -178,25 +175,84 @@ export class SlotsCardComponent implements OnInit {
   fetchOpts = input<FetchOpts>(EmptyFetchOpts);
   queryFilterPrefix = input<string>("");
   doc: CollectionResourceDoc | undefined = undefined;
-  itemList = signal<(Group | ResourceObject)[]>([]);
-  isLoading = signal<boolean>(false);
   wrapText = signal<boolean>(true);
   activities = signal<ResourceObject[]>([]);
   csvDownloadLink = signal("")
   router: Router = inject(Router);
-  private snackBar = inject(MatSnackBar);
+
+  constructor() {
+    super("Slot");
+  }
 
   isGroup(_index: number, item: any): boolean {
     return item.caption !== undefined;
   }
 
-  ngOnInit(): void {
-    this.refreshList();
+  override ngOnInit(): void {
+    super.ngOnInit();
 
     this.jsonApiService.GetProjectActivities(this.projectId()).then((doc) => {
       let theDoc = doc ? doc : null;
       this.activities.set(theDoc?.data ?? []);
     });
+  }
+
+  override asRows(doc: CollectionResourceDoc | undefined) {
+    let data: (ResourceObject)[] = doc ? doc.data : []
+    if (data.length == 0) {
+      this.isLoading.set(false);
+      return [];
+    }
+    data.sort((a, b) => {
+      let aStart = a.attributes!['start']! as string;
+      let bStart = b.attributes!['start']! as string;
+      return aStart > bStart ? -1 : 1;
+    });
+    let currentGroup = {
+      caption: (new Date(data[0]!.attributes!['start']! as string)).toLocaleDateString(),
+      data: [] as ActivitySummary[],
+    } satisfies Group;
+    let rows: (Group | ResourceObject)[] = [currentGroup]
+    for (let item of data) {
+      let startDate = (new Date(item!.attributes!['start']! as string)).toLocaleDateString()
+      const timeDiff = item.attributes!['end']
+        ? new Date(item.attributes!['end'] as string).getTime() -
+        new Date(item.attributes!['start'] as string).getTime()
+        : 0;
+      let activityId = (item.relationships!["activity"]!.data as ResourceIdentifierObject);
+      let activity = findInclude(activityId, doc!.included ?? []);
+      if (startDate !== currentGroup.caption) {
+        currentGroup = {
+          caption: startDate,
+          data: [{
+            id: activity?.id as string,
+            name: activity?.attributes!['name'] as string,
+            icon: activity?.attributes!['icon'] as string,
+            sum: timeDiff
+          }] as ActivitySummary[],
+        } satisfies Group;
+        rows.push(currentGroup);
+      } else {
+        let found = false;
+        for (let summary of currentGroup.data) {
+          if (summary.id == activity?.id) {
+            summary.sum += timeDiff;
+            found = true;
+          }
+        }
+        if (!found) {
+          currentGroup.data.push({
+            id: activity?.id as string,
+            name: activity?.attributes!['name'] as string,
+            icon: activity?.attributes!['icon'] as string,
+            sum: timeDiff
+          } satisfies ActivitySummary)
+        }
+      }
+      rows.push(item);
+    }
+    this.isLoading.set(false);
+    return rows;
   }
 
   isEmpty(filter: ObjectLike | undefined) {
@@ -205,102 +261,6 @@ export class SlotsCardComponent implements OnInit {
     }
     return Object.keys(filter).length === 0;
   }
-
-  refreshList() {
-    this.isLoading.set(true);
-    this.csvDownloadLink.set('/api/v1/project/' + this.projectId() + '/slot/csv' + buildQueryString(this.fetchOpts()))
-    this.jsonApiService.GetProjectSlots(this.projectId(), {
-      ...this.fetchOpts(),
-      includes: ['activity']
-    }).then((doc: CollectionResourceDoc | undefined) => {
-      this.doc = doc;
-      let data: (ResourceObject)[] = doc ? doc.data : []
-      if (data.length == 0) {
-        this.itemList.set([]);
-        this.isLoading.set(false);
-        return;
-      }
-
-      data.sort((a, b) => {
-        let aStart = a.attributes!['start']! as string;
-        let bStart = b.attributes!['start']! as string;
-        return aStart > bStart ? -1 : 1;
-      });
-      let currentGroup = {
-        caption: (new Date(data[0]!.attributes!['start']! as string)).toLocaleDateString(),
-        activities: [] as ActivitySummary[],
-      } satisfies Group;
-      let rows: (Group | ResourceObject)[] = [currentGroup]
-      for (let item of data) {
-        let startDate = (new Date(item!.attributes!['start']! as string)).toLocaleDateString()
-        const timeDiff = item.attributes!['end']
-          ? new Date(item.attributes!['end'] as string).getTime() -
-          new Date(item.attributes!['start'] as string).getTime()
-          : 0;
-        let activityId = (item.relationships!["activity"]!.data as ResourceIdentifierObject);
-        let activity = findInclude(activityId, this.doc!.included ?? []);
-        if (startDate !== currentGroup.caption) {
-          currentGroup = {
-            caption: startDate,
-            activities: [{
-              id: activity?.id as string,
-              name: activity?.attributes!['name'] as string,
-              icon: activity?.attributes!['icon'] as string,
-              sum: timeDiff
-            }] as ActivitySummary[],
-          } satisfies Group;
-          rows.push(currentGroup);
-        } else {
-          let found = false;
-          for (let summary of currentGroup.activities) {
-            if (summary.id == activity?.id) {
-              summary.sum += timeDiff;
-              found = true;
-            }
-          }
-          if (!found) {
-            currentGroup.activities.push({
-              id: activity?.id as string,
-              name: activity?.attributes!['name'] as string,
-              icon: activity?.attributes!['icon'] as string,
-              sum: timeDiff
-            } satisfies ActivitySummary)
-          }
-        }
-        rows.push(item);
-      }
-      this.itemList.set(rows);
-      this.isLoading.set(false);
-    });
-  }
-
-  deleteItem(event: PointerEvent, id: string) {
-    event.stopPropagation();
-    this.jsonApiService.DeleteSlot(this.projectId(), id).then(_r => {
-      this.snackBar.open('Slot deleted', '', {
-        horizontalPosition: 'end',
-        verticalPosition: 'top',
-        panelClass: ['success-snackbar'],
-        duration: 3000,
-      });
-      this.refreshList();
-    }).catch((err) => {
-      if (err instanceof ApiError) {
-        for (const oneError of (err as ApiError).errors) {
-          this.snackBar.open(oneError.title ? oneError.title : "Error occurred", '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-          console.log(oneError.detail);
-        }
-      } else {
-        console.log(err);
-      }
-
-    });
-  };
 
   valueAsLocalTime(value: string) {
     if (!value) {
@@ -347,21 +307,6 @@ export class SlotsCardComponent implements OnInit {
       s = insert + s;
     }
     return s;
-  }
-
-  filenameFromFilter(filter?: ObjectLike, prefix: string = "") {
-    return (
-      (prefix ? prefix + "_" : "") +
-      this.formatTimespan(
-        filter?.["from"] as string,
-        filter?.["fromComparator"] as number,
-        filter?.["until"] as string,
-        filter?.["untilComparator"] as number,
-        "_",
-      )
-        .replace(">", "+")
-        .replace("<", "-")
-    );
   }
 
   formatTimespan(
@@ -425,8 +370,25 @@ export class SlotsCardComponent implements OnInit {
   onFilterChanged(filter: ObjectLike, filterBar: MatSidenav) {
     filterBar.close().then(() => {
       this.fetchOpts().filter = filter;
-      this.refreshList();
+      this.refreshRows();
     });
   }
+
+  protected override async loadDocument(): Promise<CollectionResourceDoc | undefined> {
+    this.csvDownloadLink.set('/api/v1/project/' + this.projectId() + '/slot/csv' + buildQueryString(this.fetchOpts()))
+    return this.jsonApiService.GetProjectSlots(this.projectId(), {
+      ...this.fetchOpts(),
+      includes: ['activity']
+    }).then((doc)=>{
+      this.doc = doc;
+      return doc;
+    });
+
+  }
+
+  protected override deleteObject(id: string): Promise<Document<PrimaryData> | null> {
+    return this.jsonApiService.DeleteSlot(this.projectId(), id);
+  }
+
 }
 

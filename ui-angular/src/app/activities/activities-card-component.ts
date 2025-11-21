@@ -1,8 +1,11 @@
-import {Component, inject, input, OnInit, signal} from '@angular/core';
+import {Component, inject, input} from '@angular/core';
 import {MatCard, MatCardContent, MatCardHeader, MatCardTitle} from '@angular/material/card';
 import {JsonApiService} from '../json-api.service';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {ApiError, CollectionResourceDoc, ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {
+  CollectionResourceDoc,
+  Document as ApiDocument,
+  PrimaryData
+} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
   MatCell,
@@ -19,6 +22,7 @@ import {
 import {MatButton, MatMiniFabButton} from '@angular/material/button';
 import {RouterLink} from '@angular/router';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {DocumentTableComponent} from '../document-form/document-table-component';
 
 @Component({
   selector: 'app-activities-card-component',
@@ -57,7 +61,7 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
         @if (isLoading()) {
           <mat-spinner></mat-spinner>
         } @else {
-          <table mat-table class="results-table mat-elevation-z8" [dataSource]="itemList()">
+          <table mat-table class="results-table mat-elevation-z8" [dataSource]="rows()">
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef> Name</th>
               <td mat-cell *matCellDef="let item"><fa-icon [icon]="['fas', item.attributes.icon]" [style.padding-right.px]="2"/>{{ item.attributes.name }}</td>
@@ -93,23 +97,12 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
   `,
   styleUrl: './activities-card-component.scss',
 })
-export class ActivitiesCardComponent implements OnInit {
+export class ActivitiesCardComponent extends DocumentTableComponent {
   displayedColumns: string[] = ['name', 'billable', 'description', 'actions'];
-  projectId = input.required<string>();
   jsonApiService: JsonApiService = inject(JsonApiService);
-  itemList = signal<ResourceObject[]>([]);
-  isLoading = signal<boolean>(false);
-  private snackBar = inject(MatSnackBar);
-
+  projectId = input.required<string>();
   constructor() {
-    this.isLoading.set(true);
-  }
-
-  ngOnInit(): void {
-    this.jsonApiService.GetProjectActivities(this.projectId()).then((doc: CollectionResourceDoc | undefined) => {
-      this.itemList.set(doc ? doc.data : []);
-      this.isLoading.set(false);
-    });
+    super("Activity");
   }
 
   toCurrency(num: number | undefined, currency: string): string {
@@ -126,35 +119,11 @@ export class ActivitiesCardComponent implements OnInit {
     );
   }
 
-  deleteItem(event: PointerEvent, id: string) {
-    event.stopPropagation();
-    this.jsonApiService.DeleteActivity(this.projectId(), id).then(_r => {
-      this.snackBar.open('Activity deleted', '', {
-        horizontalPosition: 'end',
-        verticalPosition: 'top',
-        panelClass: ['success-snackbar'],
-        duration: 3000,
-      });
-      this.isLoading.set(true);
-      this.jsonApiService.GetProjectActivities(this.projectId()).then((doc: CollectionResourceDoc | undefined) => {
-        this.itemList.set(doc ? doc.data : []);
-        this.isLoading.set(false);
-      });
-    }).catch((err) => {
-      if (err instanceof ApiError) {
-        for (const oneError of (err as ApiError).errors) {
-          this.snackBar.open(oneError.title ? oneError.title : "Error occurred", '', {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-          console.log(oneError.detail);
-        }
-      } else {
-        console.log(err);
-      }
+  protected override loadDocument(): Promise<CollectionResourceDoc | undefined> {
+    return this.jsonApiService.GetProjectActivities(this.projectId());
+  }
 
-    });
+  protected override deleteObject(id: string): Promise<ApiDocument<PrimaryData> | null> {
+    return this.jsonApiService.DeleteActivity(this.projectId(), id);
   }
 }

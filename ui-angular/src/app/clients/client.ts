@@ -1,6 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
-
-import {ApiError, CollectionResourceDoc, ResourceObject} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {Component, inject} from '@angular/core';
 import {JsonApiService} from '../json-api.service';
 import {
   MatCell,
@@ -17,7 +15,13 @@ import {
 import {RouterLink} from '@angular/router';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {MatMiniFabButton} from '@angular/material/button';
-import {MatSnackBar} from '@angular/material/snack-bar';
+import {DocumentTableComponent} from '../document-form/document-table-component';
+import {
+  CollectionResourceDoc,
+  Document as ApiDocument,
+  PrimaryData
+} from '../../../../../../ts/ts-jsonapi-form/jsonapi/model';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
 
 
 @Component({
@@ -36,11 +40,15 @@ import {MatSnackBar} from '@angular/material/snack-bar';
     RouterLink,
     FaIconComponent,
     MatMiniFabButton,
+    MatProgressSpinner,
 
   ],
   template: `
+    @if (isLoading()) {
+      <mat-spinner></mat-spinner>
+    } @else {
     <section class="results">
-      <table mat-table class="results-table mat-elevation-z8" [dataSource]="itemList()">
+      <table mat-table class="results-table mat-elevation-z8" [dataSource]="rows()">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef> Name </th>
           <td mat-cell *matCellDef="let item">{{item.attributes.name}}</td>
@@ -62,46 +70,23 @@ import {MatSnackBar} from '@angular/material/snack-bar';
         <tr mat-row class="row-hover" [routerLink]="['/client', item.id]" *matRowDef="let item; columns: displayedColumns;"></tr>
       </table>
     </section>
+    }
   `,
   styleUrl: './client.scss',
 })
-export class Client {
+export class Client extends DocumentTableComponent{
   displayedColumns: string[] = ['name', 'description', 'actions'];
-  itemList = signal<ResourceObject[]>([]);
   jsonApiService: JsonApiService = inject(JsonApiService);
-  private snackBar = inject(MatSnackBar);
-  constructor() {
-    this.jsonApiService.GetClients().then((doc: CollectionResourceDoc | undefined) => {
-      this.itemList.set(doc ? doc.data : []);
-    });
-  }
-  deleteItem(event:PointerEvent, id:string) {
-    event.stopPropagation();
-    this.jsonApiService.DeleteClient(id).then(_r => {
-      this.snackBar.open('Client deleted','',{
-        horizontalPosition: 'end',
-        verticalPosition: 'top',
-        panelClass: ['success-snackbar'],
-        duration: 3000,
-      });
-      this.jsonApiService.GetClients().then((doc: CollectionResourceDoc | undefined) => {
-        this.itemList.set(doc ? doc.data : []);
-      });
-    }).catch((err)=>{
-      if (err instanceof ApiError) {
-        for (const oneError of (err as ApiError).errors){
-          this.snackBar.open(oneError.title ? oneError.title : "Error occurred",'',{
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
-            duration: 3000,
-          });
-          console.log(oneError.detail);
-        }
-      }else{
-        console.log(err);
-      }
 
-    });
+  constructor() {
+    super("Client");
+  }
+
+  protected override loadDocument(): Promise<CollectionResourceDoc | undefined> {
+      return this.jsonApiService.GetClients();
+  }
+
+  protected override deleteObject(id: string): Promise<ApiDocument<PrimaryData> | null> {
+    return this.jsonApiService.DeleteClient(id);
   }
 }

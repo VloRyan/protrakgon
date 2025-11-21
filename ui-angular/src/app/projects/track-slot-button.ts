@@ -67,7 +67,7 @@ interface SlotType {
 export class TrackSlotButton implements OnInit {
   isLoading = signal(true);
   jsonApiService: JsonApiService = inject(JsonApiService);
-  openSlot = signal<SlotType|undefined>(undefined);
+  openSlot = signal<SlotType | undefined>(undefined);
   activitiesObjects = signal<ResourceObject[] | undefined>(undefined);
   projectId = input.required<string>();
   protected readonly open = open;
@@ -75,16 +75,17 @@ export class TrackSlotButton implements OnInit {
   ngOnInit(): void {
     this.updateOpenSlot();
   }
-  updateOpenSlot(){
+
+  updateOpenSlot() {
     this.jsonApiService.GetProjectSlots(this.projectId(), {
       ...EmptyFetchOpts,
       filter: {isOpen: true},
       includes: ['activity']
     }).then((doc) => {
-      if (doc?.data == undefined||doc?.data.length == 0) {
+      if (doc?.data == undefined || doc?.data.length == 0) {
         this.openSlot.set(undefined);
       } else {
-        const firstSlot =  doc!.data[0]!;
+        const firstSlot = doc!.data[0]!;
         const activity = findInclude(firstSlot.relationships!['activity']!.data as ResourceIdentifierObject, doc.included ?? [])
         this.openSlot.set({
           id: firstSlot.id,
@@ -127,8 +128,7 @@ export class TrackSlotButton implements OnInit {
         errors: undefined
       } as SingleResourceDoc
     });
-    form.submit();
-    this.updateOpenSlot();
+    form.submit().then(()=>this.updateOpenSlot());
   }
 
   endSlot(ev: MouseEvent, slot: SlotType) {
@@ -154,7 +154,6 @@ export class TrackSlotButton implements OnInit {
         errors: undefined
       } as SingleResourceDoc
     });
-    form.submit();
-    this.updateOpenSlot();
+    form.submit().then(()=>this.updateOpenSlot());
   }
 }

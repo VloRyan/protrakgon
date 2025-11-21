@@ -27,8 +27,8 @@ export const routes: Routes = [
     title: 'Client',
     data: {
       actions: [{
-        caption: "Create", icon: ['fas', 'plus'], click: (_event, router) => {
-          router.navigate(['/client/new']);
+        caption: "Create", icon: ['fas', 'plus'],  type: 'click', click: (_event, router) => {
+          router.navigate(['/client/new']).then();
         }
       }] as RouteAction[]
     }
@@ -48,7 +48,7 @@ export const routes: Routes = [
     title: 'Project',
     data: {
       actions: [{
-        caption: "Create", icon: ['fas', 'plus'], click: (_event, router) => {
+        caption: "Create", icon: ['fas', 'plus'],  type: 'click',click: (_event, router) => {
           router.navigate(['/project/new']);
         }
       }] as RouteAction[]
