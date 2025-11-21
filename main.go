@@ -17,7 +17,7 @@ import (
 //go:embed assets/*
 var embedDir embed.FS
 
-//go:embed ui/dist/*
+//go:embed ui/dist/browser/*
 var uiDistDir embed.FS
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	uiSrc, err := fs.Sub(uiDistDir, "ui/dist")
+	uiSrc, err := fs.Sub(uiDistDir, "ui/dist/browser")
 	if err != nil {
 		panic(err)
 	}

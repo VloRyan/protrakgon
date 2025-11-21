@@ -119,7 +119,7 @@ func (svr *Server) Run() error {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if isIndexAsset(r.URL.Path) {
+		if isFile(r.URL.Path) {
 			filePath := r.URL.Path[len(svr.ContextRoot):]
 			mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 			w.Header().Set("Content-Type", mimeType)
@@ -146,7 +146,10 @@ func (svr *Server) Run() error {
 
 	return svr.HTTP.ListenAndServe()
 }
-
+func isFile(path string) bool {
+	match, _ := regexp.MatchString("\\.(css|js|svg)$", path)
+	return match
+}
 func isIndexAsset(path string) bool {
 	match, _ := regexp.MatchString("/assets/(index|icon)-[\\w-]+\\.(css|js|svg)$", path)
 	return match
