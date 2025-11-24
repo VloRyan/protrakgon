@@ -72,7 +72,7 @@ import {DocumentFormComponent} from '../document-form/document-form-component';
       <br/>
       <app-activities-card-component [projectId]="projectId()"></app-activities-card-component>
       <br/>
-      <app-slots-card-component [projectId]="projectId()" [fetchOpts]="fetchOptsWithFilter(this.slotsFilter())"
+      <app-slots-card-component [projectId]="projectId()" [fetchOpts]="fetchOptsWithFilterAndSort(this.slotsFilter(),'-start')"
                                 queryFilterPrefix="slots"></app-slots-card-component>
     }
   `,
@@ -112,8 +112,8 @@ export class ProjectDetail extends DocumentFormComponent{
     this.fetchOpts = extractFetchOpts(queryString);
   }
 
-  fetchOptsWithFilter(filter: ObjectLike): FetchOpts {
-    return {...EmptyFetchOpts, filter: filter};
+  fetchOptsWithFilterAndSort(filter: ObjectLike, sort :string): FetchOpts {
+    return {...EmptyFetchOpts, filter: filter,sort:sort};
   }
 
   slotsFilter(): ObjectLike {
@@ -147,13 +147,4 @@ export class ProjectDetail extends DocumentFormComponent{
     return  this.jsonApiService.GetProject(this.route.snapshot.params['id'])
   }
 
-
-/*
-  onInput(ev: Event) {
-    this.form()?.handleChangeEvent(ev);
-  }
-
-  onSubmit(ev: Event) {
-    this.form()?.handleSubmit(ev);
-  }*/
 }
