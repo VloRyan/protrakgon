@@ -13,6 +13,6 @@ export const appConfig: ApplicationConfig = {
     provideProtractorTestingSupport(),
     provideRouter(routes),
     provideHttpClient(),
-  {provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: { clickAction: 'check-indeterminate' } as MatCheckboxDefaultOptions}
+    {provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: {clickAction: 'check-indeterminate'} as MatCheckboxDefaultOptions}
   ]
 };
