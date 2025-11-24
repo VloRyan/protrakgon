@@ -109,7 +109,7 @@ func (svr *Server) Run() error {
 	if err != nil {
 		return err
 	}
-	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot)
+	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot) + "/"
 	svr.indexHtml, err = httpx.GenerateReplacedIndexHTML(svr.uiSrc, fullPrefix, `{apiUrl: "`+path.Join(fullPrefix, svr.ApiRoutePrefix)+`", contextRoot: "`+fullPrefix+`"}`)
 	if err != nil {
 		panic(err)
