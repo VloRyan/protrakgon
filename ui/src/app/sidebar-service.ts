@@ -4,17 +4,15 @@ import {Injectable} from '@angular/core';
   providedIn: 'root',
 })
 export class SidebarService {
-  private _showSidebar = false;
+  private opened = false;
 
-  public get showSidebar() {
-    return this._showSidebar ;
+  public getOpened() {
+    return this.opened ;
   }
-
-  public set showSidebar(v : boolean) {
-    this._showSidebar = v;
+  public setOpened(v : boolean) {
+    this.opened = v;
   }
-
-  public  toggleSidebar(){
-     this._showSidebar = !this._showSidebar;
+  public  toggleOpened(){
+     this.opened = !this.opened;
   }
 }

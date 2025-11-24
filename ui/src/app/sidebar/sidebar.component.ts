@@ -14,12 +14,12 @@ import {AppConfigService} from '../app-config.service';
   selector: 'app-sidebar',
   template: `
     <mat-sidenav-container class="sidenav-container" >
-      <mat-sidenav #sidenav mode="side" class="mat-elevation-z8" opened="{{this.sidebarService.showSidebar}}">
+      <mat-sidenav #sidenav mode="over" class="mat-elevation-z8" opened="{{this.sidebarService.getOpened()}}" (openedChange)="this.onOpenChanged($event)">
         <mat-nav-list>
-          <a [routerLink]="'/client'" mat-list-item (click)="sidenav.close()">
+          <a [routerLink]="'/client'" mat-list-item (click)="this.sidebarService.setOpened(false)">
             <fa-icon [icon]="['fas', 'person']" />
             Client</a>
-          <a [routerLink]="'/project'" mat-list-item (click)="sidenav.close()">
+          <a [routerLink]="'/project'" mat-list-item (click)="this.sidebarService.setOpened(false)">
             <fa-icon [icon]="['fas', 'list-ul']"/>
             Project</a>
         </mat-nav-list>
@@ -44,4 +44,7 @@ import {AppConfigService} from '../app-config.service';
 export class SidebarComponent {
   sidebarService: SidebarService = inject(SidebarService);
   appConfig = inject(AppConfigService);
+  onOpenChanged(opened: boolean) {
+    this.sidebarService.setOpened(opened);
+  }
 }

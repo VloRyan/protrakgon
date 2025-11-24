@@ -24,13 +24,13 @@ import {AppConfigService} from '../app-config.service';
   template: `
     <mat-grid-list cols="3" rowHeight="50px">
       <mat-grid-tile>
-        <button matIconButton (click)="this.sidebarService.toggleSidebar()">
+        <button matIconButton (click)="this.sidebarService.toggleOpened()">
           <mat-icon>menu</mat-icon>
         </button>
         <a matButton [routerLink]="'/'">
           <div class="mat-h1">
             <img alt="logo" aria-hidden="true" class="brand-logo" height="32"
-                                   [src]="appConfig.contextRoot()+'/assets/icon.svg'" width="32"/>{{ this.appName() }}
+                                   [src]="appConfig.contextRoot()+'assets/icon.svg'" width="32"/>{{ this.appName() }}
           </div>
         </a>
         <div class="mat-h1">{{ RouteTitle() }}</div>
