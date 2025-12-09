@@ -146,11 +146,8 @@ func (svr *Server) Run() error {
 
 	return svr.HTTP.ListenAndServe()
 }
+
 func isFile(path string) bool {
 	match, _ := regexp.MatchString("\\.(css|js|svg)$", path)
-	return match
-}
-func isIndexAsset(path string) bool {
-	match, _ := regexp.MatchString("/assets/(index|icon)-[\\w-]+\\.(css|js|svg)$", path)
 	return match
 }

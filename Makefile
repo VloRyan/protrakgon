@@ -1,3 +1,5 @@
+.PHONY: build test
+
 NAME = $(notdir $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 build-ui:
 	npm run build --prefix ui
