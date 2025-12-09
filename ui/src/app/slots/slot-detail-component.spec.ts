@@ -1,6 +1,6 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {SlotDetailComponent} from './slot-detail-component';
+import { SlotDetailComponent } from './slot-detail-component';
 
 describe('ActivityDetailComponent', () => {
   let component: SlotDetailComponent;
@@ -8,9 +8,8 @@ describe('ActivityDetailComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SlotDetailComponent]
-    })
-    .compileComponents();
+      imports: [SlotDetailComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SlotDetailComponent);
     component = fixture.componentInstance;

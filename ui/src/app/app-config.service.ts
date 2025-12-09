@@ -1,22 +1,24 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AppConfigService {
-  apiUrl(){
+  apiUrl() {
     // @ts-expect-error will be added by server on prod
-  return  window.SERVER_DATA != undefined ?  window.SERVER_DATA.apiUrl:"/api/v1/";
+    return window.SERVER_DATA != undefined
+      ? window.SERVER_DATA.apiUrl
+      : '/api/v1/';
   }
 
-  contextRoot(){
+  contextRoot() {
     // @ts-expect-error will be added by server on prod
-    return window.SERVER_DATA != undefined ?  window.SERVER_DATA.contextRoot:"/";
+    return window.SERVER_DATA != undefined
+      ? window.SERVER_DATA.contextRoot
+      : '/';
   }
 
-  appName(){
-    return "ProTrakGon";
+  appName() {
+    return 'ProTrakGon';
   }
-
-
 }

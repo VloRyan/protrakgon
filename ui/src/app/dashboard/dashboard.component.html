@@ -1,11 +1,11 @@
 <div class="grid-container">
   <mat-grid-list cols="2" rowHeight="350px">
-    @for (card of cards ; track card) {
+    @for (card of cards; track card) {
       <mat-grid-tile [colspan]="card.cols" [rowspan]="card.rows">
         <mat-card class="dashboard-card">
           <mat-card-header>
             <mat-card-title>
-              {{card.title}}
+              {{ card.title }}
               <button [matMenuTriggerFor]="menu" aria-label="Toggle menu" class="more-button" matIconButton>
                 <mat-icon>more_vert</mat-icon>
               </button>

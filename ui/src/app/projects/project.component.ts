@@ -1,7 +1,11 @@
-import {Component, inject} from '@angular/core';
+import { Component, inject } from '@angular/core';
 
-import {Document, Included, PrimaryData} from '@vloryan/ts-jsonapi-form/jsonapi/model';
-import {JsonApiService} from '../json-api.service';
+import {
+  Document,
+  Included,
+  PrimaryData,
+} from '@vloryan/ts-jsonapi-form/jsonapi/model';
+import { JsonApiService } from '../json-api.service';
 import {
   MatCell,
   MatCellDef,
@@ -12,16 +16,15 @@ import {
   MatHeaderRowDef,
   MatRow,
   MatRowDef,
-  MatTable
+  MatTable,
 } from '@angular/material/table';
-import {RouterLink} from '@angular/router';
-import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {MatMiniFabButton} from '@angular/material/button';
-import {ProjectClientCell} from './client.cell.component';
-import {MatGridList, MatGridTile} from '@angular/material/grid-list';
-import {TrackSlotButton} from './track-slot-button';
-import {DocumentTableComponent} from '../document-form/document-table-component';
-
+import { RouterLink } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { MatMiniFabButton } from '@angular/material/button';
+import { ProjectClientCell } from './client.cell.component';
+import { MatGridList, MatGridTile } from '@angular/material/grid-list';
+import { TrackSlotButton } from './track-slot-button';
+import { DocumentTableComponent } from '../document-form/document-table-component';
 
 @Component({
   selector: 'app-project',
@@ -45,44 +48,63 @@ import {DocumentTableComponent} from '../document-form/document-table-component'
     MatGridList,
     MatGridTile,
     TrackSlotButton,
-
   ],
   template: `
     <section class="results">
-      <table mat-table class="results-table mat-elevation-z8" [dataSource]="rows()">
+      <table
+        mat-table
+        class="results-table mat-elevation-z8"
+        [dataSource]="rows()"
+      >
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef> Name</th>
+          <th mat-header-cell *matHeaderCellDef>Name</th>
           <td mat-cell *matCellDef="let item">{{ item.attributes.name }}</td>
         </ng-container>
         <ng-container matColumnDef="client">
-          <th mat-header-cell *matHeaderCellDef> Client</th>
+          <th mat-header-cell *matHeaderCellDef>Client</th>
           <td mat-cell *matCellDef="let item">
-            <app-project-client-cell [item]="item" [included]="included"></app-project-client-cell>
+            <app-project-client-cell
+              [item]="item"
+              [included]="included"
+            ></app-project-client-cell>
           </td>
         </ng-container>
         <ng-container matColumnDef="description">
-          <th mat-header-cell *matHeaderCellDef> Description</th>
-          <td mat-cell *matCellDef="let item">{{ item.attributes.description }}</td>
+          <th mat-header-cell *matHeaderCellDef>Description</th>
+          <td mat-cell *matCellDef="let item">
+            {{ item.attributes.description }}
+          </td>
         </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
-          <td class="action-col" mat-cell *matCellDef="let item;" style="text-align: right; width: 100px; padding: 0">
+          <td
+            class="action-col"
+            mat-cell
+            *matCellDef="let item"
+            style="text-align: right; width: 100px; padding: 0"
+          >
             <span class="action-spacer"></span>
             <mat-grid-list cols="2" style="width: 100px" rowHeight="40px">
               <mat-grid-tile>
-                <app-track-slot-button [projectId]="item.id"></app-track-slot-button>
+                <app-track-slot-button
+                  [projectId]="item.id"
+                ></app-track-slot-button>
               </mat-grid-tile>
               <mat-grid-tile>
                 <button matMiniFab (click)="deleteItem($event, item.id)">
-                  <fa-icon [icon]="['fas', 'trash']"/>
+                  <fa-icon [icon]="['fas', 'trash']" />
                 </button>
               </mat-grid-tile>
             </mat-grid-list>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row class="row-hover" [routerLink]="['/project', item.id]"
-            *matRowDef="let item; columns: displayedColumns;"></tr>
+        <tr
+          mat-row
+          class="row-hover"
+          [routerLink]="['/project', item.id]"
+          *matRowDef="let item; columns: displayedColumns"
+        ></tr>
       </table>
     </section>
   `,
@@ -94,7 +116,7 @@ export class ProjectComponent extends DocumentTableComponent {
   included: Included | undefined = undefined;
 
   constructor() {
-    super("Project");
+    super('Project');
   }
 
   override async loadDocument() {
@@ -105,8 +127,9 @@ export class ProjectComponent extends DocumentTableComponent {
     return doc;
   }
 
-  protected override deleteObject(id: string): Promise<Document<PrimaryData> | null> {
+  protected override deleteObject(
+    id: string,
+  ): Promise<Document<PrimaryData> | null> {
     return this.jsonApiService.DeleteProject(id);
   }
 }
-

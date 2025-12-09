@@ -1,10 +1,17 @@
-import {ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from '@angular/core';
-import {provideRouter} from '@angular/router';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
+import { provideRouter } from '@angular/router';
 
-import {routes} from './app.routes';
-import {provideProtractorTestingSupport} from '@angular/platform-browser';
-import {provideHttpClient} from '@angular/common/http';
-import {MAT_CHECKBOX_DEFAULT_OPTIONS, MatCheckboxDefaultOptions} from '@angular/material/checkbox';
+import { routes } from './app.routes';
+import { provideProtractorTestingSupport } from '@angular/platform-browser';
+import { provideHttpClient } from '@angular/common/http';
+import {
+  MAT_CHECKBOX_DEFAULT_OPTIONS,
+  MatCheckboxDefaultOptions,
+} from '@angular/material/checkbox';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,6 +20,11 @@ export const appConfig: ApplicationConfig = {
     provideProtractorTestingSupport(),
     provideRouter(routes),
     provideHttpClient(),
-    {provide: MAT_CHECKBOX_DEFAULT_OPTIONS, useValue: {clickAction: 'check-indeterminate'} as MatCheckboxDefaultOptions}
-  ]
+    {
+      provide: MAT_CHECKBOX_DEFAULT_OPTIONS,
+      useValue: {
+        clickAction: 'check-indeterminate',
+      } as MatCheckboxDefaultOptions,
+    },
+  ],
 };
