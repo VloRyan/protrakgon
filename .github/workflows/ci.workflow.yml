@@ -37,7 +37,7 @@ jobs:
           go-version: '1.24.x'
 
       - name: Fake ui dist
-        run: mkdir ui/dist && touch ui/dist/empty
+        run: mkdir -p ui/dist/browser && touch ui/dist/browser/empty
 
       - name: Test
         run: make test
