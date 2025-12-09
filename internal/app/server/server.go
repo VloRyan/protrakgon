@@ -109,7 +109,7 @@ func (svr *Server) Run() error {
 	if err != nil {
 		return err
 	}
-	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot)
+	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot) + "/"
 	svr.indexHtml, err = httpx.GenerateReplacedIndexHTML(svr.uiSrc, fullPrefix, `{apiUrl: "`+path.Join(fullPrefix, svr.ApiRoutePrefix)+`", contextRoot: "`+fullPrefix+`"}`)
 	if err != nil {
 		panic(err)
@@ -119,7 +119,7 @@ func (svr *Server) Run() error {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if isIndexAsset(r.URL.Path) {
+		if isFile(r.URL.Path) {
 			filePath := r.URL.Path[len(svr.ContextRoot):]
 			mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 			w.Header().Set("Content-Type", mimeType)
@@ -147,7 +147,7 @@ func (svr *Server) Run() error {
 	return svr.HTTP.ListenAndServe()
 }
 
-func isIndexAsset(path string) bool {
-	match, _ := regexp.MatchString("/assets/(index|icon)-[\\w-]+\\.(css|js|svg)$", path)
+func isFile(path string) bool {
+	match, _ := regexp.MatchString("\\.(css|js|svg)$", path)
 	return match
 }

@@ -1,0 +1,17 @@
+.error-snackbar {
+  background-color: red;
+}
+
+tr.row-hover:not(.action-col):hover {
+  background: darkslategrey;
+  cursor: pointer;
+}
+
+.action-spacer {
+  flex: 1 1 auto;
+}
+
+.snackbar-error-message {
+  color: white;
+  font-size: 15px;
+}

@@ -110,7 +110,7 @@ func (f *SlotFilter) ToCriteria() filter.Criteria {
 	}
 	if f.Until != nil {
 		fieldFilter := tableFilter.Column("ended_at").AsDate()
-		switch f.FromComparator {
+		switch f.UntilComparator {
 		case CompareOperatorEqual:
 			criteria = criteria.And(fieldFilter.Eq(f.Until, filter.AsDate))
 		case CompareOperatorNotEqual:

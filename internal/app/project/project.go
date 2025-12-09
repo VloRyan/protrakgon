@@ -104,7 +104,7 @@ func NewRepository() db.CRUDRepository[*Project, *Filter] {
 			SelectFields: []statement.ColumnExpression{
 				{Name: "id", Alias: "Client.ID"},
 				{Name: "name", Alias: "Client.Name"},
-				{Name: "description", Alias: "Activity.Description"},
+				{Name: "description", Alias: "Client.Description"},
 			},
 		}},
 	})

@@ -3,7 +3,7 @@
 # ProTrakGoN
 
 **PROject TRAcK GO + N** – Time tracking for client projects  
-🔧 Go backend implementing JSON:API & 🌐 TypeScript React frontend based on Bootstrap
+🔧 Go backend implementing JSON:API & 🌐 TypeScript Angular frontend styled by Material UI
 
 ---
 
@@ -13,7 +13,7 @@
 
 **ProTrakGoN** is a modern and modular time tracking system for client-based projects.  
 It consists of a powerful backend written in Go (following the [JSON:API](https://jsonapi.org/) specification) and a
-user-friendly frontend built with TypeScript, React, and Bootstrap.
+user-friendly frontend built with TypeScript, Angular, and Material UI.
 
 Use it to track, manage, and evaluate time entries for multiple clients and projects with ease.
 
@@ -25,7 +25,7 @@ Use it to track, manage, and evaluate time entries for multiple clients and proj
 - 👥 Manage clients, projects, and tasks
 - 📊 Generate reports and overviews
 - 🔄 RESTful API conforming to JSON:API
-- 💻 Modern UI with React + Bootstrap
+- 💻 Modern UI with Angular + Material UI
 - 🔐 Optional authentication support
 
 ---
@@ -39,13 +39,12 @@ Use it to track, manage, and evaluate time entries for multiple clients and proj
 - HTTP router: [goltmux](https://github.com/VloRyan/goltmux)
 - Database: SQLite
 
-### Frontend (React)
+### Frontend (Angular)
 
 - TypeScript
-- React
-- Bootstrap 5
+- Angular
+- Material UI
 - [ts-jsonapi-form](https://github.com/VloRyan/ts-jsonapi-form)
-- Tanstack React Query
 
 ---
 
