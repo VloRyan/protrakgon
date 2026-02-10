@@ -8,9 +8,11 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/rs/zerolog/log"
 	"github.com/vloryan/go-libs/httpx"
 	"github.com/vloryan/go-libs/httpx/router"
 	"github.com/vloryan/goltmux"
@@ -82,33 +84,36 @@ func New() *Server {
 	}
 }
 
-func (svr *Server) setupDB() (*sqlite.Connection, *db.MigrationInfo, error) {
-	connection, err := sqlite.NewConnection(svr.databaseFileName + "?_fk=on") // with foreign key support
+func (svr *Server) performMigrations(con *sqlite.Connection) (*db.MigrationInfo, error) {
+	migrationSource, err := iofs.New(svr.assets, "migrations")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	d, err := iofs.New(svr.assets, "migrations")
+	drv, err := sqlite.MigrateDriver(con)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	drv, err := sqlite.MigrateDriver(connection)
-	if err != nil {
-		return nil, nil, err
-	}
-	info, err := db.DoMigration(drv, "migrations", d)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return connection, info, nil
+	return db.DoMigration(drv, "migrations", migrationSource)
 }
 
 func (svr *Server) Run() error {
-	connection, _, err := svr.setupDB()
+	connection, err := sqlite.NewConnection(svr.databaseFileName + "?_fk=on") // with foreign key support
 	if err != nil {
 		return err
 	}
+	defer func(connection *sqlite.Connection) {
+		_ = connection.Close()
+	}(connection)
+
+	migration, err := svr.performMigrations(connection)
+	if err != nil {
+		_ = connection.Close()
+		return err
+	}
+	if migration.CurrentVersion != migration.MigratedVersion {
+		log.Info().Msg("Migrated database to version: " + strconv.Itoa(int(migration.CurrentVersion)))
+	}
+
 	fullPrefix := path.Join(svr.ProxyLocation, svr.ContextRoot) + "/"
 	svr.indexHtml, err = httpx.GenerateReplacedIndexHTML(svr.uiSrc, fullPrefix, `{apiUrl: "`+path.Join(fullPrefix, svr.ApiRoutePrefix)+`", contextRoot: "`+fullPrefix+`"}`)
 	if err != nil {
