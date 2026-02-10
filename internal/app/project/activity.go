@@ -15,14 +15,22 @@ import (
 	"github.com/vloryan/protrakgon/internal/app/server/request"
 )
 
+type BillableAmountUnit int
+
+const (
+	BillableAmountUnitNone BillableAmountUnit = iota
+	BillableAmountUnitPerHour
+	BillableAmountUnitPerDay
+)
+
 type Activity struct {
-	ID          int      `json:"id,omitempty"`
-	Project     *Project `json:"project,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	Billable    bool     `json:"billable,omitempty"`
-	Amount      float64  `json:"amount,omitempty"`
-	Icon        string   `json:"icon,omitempty"`
+	ID                 int                `json:"id,omitempty"`
+	Project            *Project           `json:"project,omitempty"`
+	Name               string             `json:"name,omitempty"`
+	Description        *string            `json:"description,omitempty"`
+	Amount             float64            `json:"amount,omitempty"`
+	BillableAmountUnit BillableAmountUnit `json:"billableAmountUnit,omitempty" db:"billable_amount_unit"`
+	Icon               string             `json:"icon,omitempty"`
 }
 
 func (p *Activity) SetIdentifier(id *jsonapi.ResourceIdentifierObject) {
@@ -52,11 +60,11 @@ func (p *Activity) GetIdentifier() *jsonapi.ResourceIdentifierObject {
 }
 
 type ActivityFilter struct {
-	ID        *int     `form:"filter[id]"`
-	Name      string   `form:"filter[name]"`
-	ProjectID *int     `form:"filter[projectId]"`
-	Billable  *bool    `form:"filter[billable]"`
-	Amount    *float64 `form:"filter[amount]"`
+	ID                 *int     `form:"filter[id]"`
+	Name               string   `form:"filter[name]"`
+	ProjectID          *int     `form:"filter[projectId]"`
+	BillableAmountUnit *bool    `form:"filter[billableAmountUnit]"`
+	Amount             *float64 `form:"filter[amount]"`
 }
 
 func (f *ActivityFilter) ToCriteria() filter.Criteria {
@@ -73,8 +81,8 @@ func (f *ActivityFilter) ToCriteria() filter.Criteria {
 	if f.ProjectID != nil {
 		criteria = criteria.And(tableFilter.Column("project_id").Eq(*f.ProjectID))
 	}
-	if f.Billable != nil {
-		criteria = criteria.And(tableFilter.Column("billable").Eq(*f.Billable))
+	if f.BillableAmountUnit != nil {
+		criteria = criteria.And(tableFilter.Column("billable_amount_unit").Eq(*f.BillableAmountUnit))
 	}
 	if f.Amount != nil {
 		criteria = criteria.And(tableFilter.Column("amount").Eq(*f.Amount))
@@ -90,7 +98,7 @@ func NewActivityRepository() db.CRUDRepository[*Activity, *ActivityFilter] {
 	return api.NewCRUDRepository[*Activity, *ActivityFilter](api.RepositoryParams{
 		TableName:   "activity",
 		IDColumn:    "id",
-		ColumnNames: []string{"name", "project_id", "description", "billable", "amount", "icon"},
+		ColumnNames: []string{"name", "project_id", "description", "billable_amount_unit", "amount", "icon"},
 	})
 }
 

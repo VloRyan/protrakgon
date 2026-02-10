@@ -136,7 +136,12 @@ func (f *SlotFilter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("description").Like("%" + strings.ToLower(*f.Description) + "%"))
 	}
 	if f.IsBillable != nil {
-		criteria = criteria.And(filter.NewTable("activity").Column("billable").Eq(*f.IsBillable))
+		if *f.IsBillable == true {
+			criteria = criteria.And(filter.NewTable("activity").Column("billable_amount_unit").Neq(BillableAmountUnitNone))
+		} else {
+			criteria = criteria.And(filter.NewTable("activity").Column("billable_amount_unit").Eq(BillableAmountUnitNone))
+		}
+
 	}
 	return criteria
 }
@@ -245,12 +250,22 @@ func (s *slotService) Save(tx db.Transaction, slot *Slot) error {
 
 	slot.Start = slot.Start.UTC().Truncate(time.Minute)
 	if slot.End == nil {
-		openSlot, err := s.GetOpenSlot(tx, slot.Project.ID)
+		activity, err := Activities.GetByID(tx, slot.Activity.ID)
 		if err != nil {
 			return err
 		}
-		if openSlot != nil && openSlot.ID != slot.ID {
-			return ErrOpenSlotExists
+		if activity.BillableAmountUnit == BillableAmountUnitPerDay {
+			slot.Start = slot.Start.UTC().Truncate(time.Hour)
+			startOfNextDay := slot.Start.UTC().Add(time.Hour * 24)
+			slot.End = &startOfNextDay
+		} else {
+			openSlot, err := s.GetOpenSlot(tx, slot.Project.ID)
+			if err != nil {
+				return err
+			}
+			if openSlot != nil && openSlot.ID != slot.ID {
+				return ErrOpenSlotExists
+			}
 		}
 	} else {
 		newEnd := slot.End.UTC().Truncate(time.Minute)
@@ -295,7 +310,7 @@ func NewSlotRepository() db.CRUDRepository[*Slot, *SlotFilter] {
 				{Name: "name", Alias: "Activity.Name"},
 				{Name: "project_id", Alias: "Activity.Project.ID"},
 				{Name: "description", Alias: "Activity.Description"},
-				{Name: "billable", Alias: "Activity.Billable"},
+				{Name: "billable_amount_unit", Alias: "Activity.billable_amount_unit"},
 				{Name: "amount", Alias: "Activity.Amount"},
 				{Name: "icon", Alias: "Activity.Icon"},
 			},

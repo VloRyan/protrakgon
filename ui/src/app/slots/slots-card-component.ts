@@ -60,7 +60,8 @@ export interface ActivitySummary {
   id: string;
   name: string;
   icon: string;
-  sum: number;
+  amountSum: number;
+  amountUnit: number;
 }
 
 @Component({
@@ -137,7 +138,7 @@ export interface ActivitySummary {
         </mat-card-header>
         <mat-card-content>
           @if (isLoading()) {
-            <mat-spinner></mat-spinner>
+            <mat-spinner />
           } @else {
             <table
               mat-table
@@ -155,13 +156,23 @@ export interface ActivitySummary {
                   {{ activity?.attributes!['name'] }}
                 </td>
               </ng-container>
-              <ng-container matColumnDef="duration">
-                <th mat-header-cell *matHeaderCellDef>Duration</th>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount/Duration</th>
                 <td mat-cell *matCellDef="let item">
-                  {{ valueAsLocalTime(item.attributes.start) }} -
-                  {{ valueAsLocalTime(item.attributes.end) }} ({{
-                    this.formatDuration(this.calcDuration(item))
-                  }})
+                  @let activity = findActivity(item);
+                  @if (activity?.attributes!['billableAmountUnit']! != 2) {
+                    {{ valueAsLocalTime(item.attributes.start) }} -
+                    {{ valueAsLocalTime(item.attributes.end) }} ({{
+                      this.formatDuration(
+                        this.calcDurationInMinutes(
+                          item.attributes!['start'],
+                          item.attributes?.['end']
+                        )
+                      )
+                    }})
+                  } @else {
+                    1
+                  }
                 </td>
               </ng-container>
               <ng-container matColumnDef="description">
@@ -212,9 +223,15 @@ export interface ActivitySummary {
                     group.caption
                   }}</strong>
                   @for (summary of group.data; track $index) {
-                    <fa-icon [icon]="['fas', summary.icon + '']" />{{
-                      this.formatDuration(summary.sum)
-                    }}
+                    <fa-icon
+                      [icon]="['fas', summary.icon + '']"
+                      [title]="summary.name"
+                    />
+                    @if (summary.amountUnit != 2) {
+                      {{ this.formatDuration(summary.amountSum) }}
+                    } @else {
+                      {{ summary.amountSum }}
+                    }
                   }
                 </td>
               </ng-container>
@@ -234,12 +251,7 @@ export interface ActivitySummary {
 })
 export class SlotsCardComponent extends DocumentTableComponent {
   appConfig = inject(AppConfigService);
-  displayedColumns: string[] = [
-    'activity',
-    'duration',
-    'description',
-    'actions',
-  ];
+  displayedColumns: string[] = ['activity', 'amount', 'description', 'actions'];
   projectId = input.required<string>();
   jsonApiService: JsonApiService = inject(JsonApiService);
   fetchOpts = input<FetchOpts>(EmptyFetchOpts);
@@ -274,29 +286,38 @@ export class SlotsCardComponent extends DocumentTableComponent {
       this.isLoading.set(false);
       return [];
     }
+
     data.sort((a, b) => {
       const aStart = a.attributes!['start']! as string;
       const bStart = b.attributes!['start']! as string;
       return aStart > bStart ? -1 : 1;
     });
+
     let currentGroup = {
       caption: new Date(
         data[0]!.attributes!['start']! as string,
       ).toLocaleDateString(),
       data: [] as ActivitySummary[],
     } satisfies Group;
+
     const rows: (Group | ResourceObject)[] = [currentGroup];
     for (const item of data) {
       const startDate = new Date(
         item!.attributes!['start']! as string,
       ).toLocaleDateString();
-      const timeDiff = item.attributes!['end']
-        ? new Date(item.attributes!['end'] as string).getTime() -
-          new Date(item.attributes!['start'] as string).getTime()
-        : 0;
+
       const activityId = item.relationships!['activity']!
         .data as ResourceIdentifierObject;
       const activity = findInclude(activityId, doc!.included ?? []);
+
+      const amountSum =
+        activity?.attributes!['billableAmountUnit'] != 2
+          ? this.calcDurationInMinutes(
+              item.attributes!['start'] as string,
+              item.attributes!['end'] as string | undefined,
+            )
+          : 1;
+
       if (startDate !== currentGroup.caption) {
         currentGroup = {
           caption: startDate,
@@ -305,7 +326,7 @@ export class SlotsCardComponent extends DocumentTableComponent {
               id: activity?.id as string,
               name: activity?.attributes!['name'] as string,
               icon: activity?.attributes!['icon'] as string,
-              sum: timeDiff,
+              amountSum: amountSum,
             },
           ] as ActivitySummary[],
         } satisfies Group;
@@ -314,7 +335,7 @@ export class SlotsCardComponent extends DocumentTableComponent {
         let found = false;
         for (const summary of currentGroup.data) {
           if (summary.id == activity?.id) {
-            summary.sum += timeDiff;
+            summary.amountSum += amountSum;
             found = true;
           }
         }
@@ -323,7 +344,8 @@ export class SlotsCardComponent extends DocumentTableComponent {
             id: activity?.id as string,
             name: activity?.attributes!['name'] as string,
             icon: activity?.attributes!['icon'] as string,
-            sum: timeDiff,
+            amountSum: amountSum,
+            amountUnit: activity?.attributes!['billableAmountUnit'] as number,
           } satisfies ActivitySummary);
         }
       }
@@ -362,22 +384,20 @@ export class SlotsCardComponent extends DocumentTableComponent {
     return findInclude(id as ResourceIdentifierObject, this.doc.included ?? []);
   }
 
-  calcDuration(object: ResourceObject) {
-    return object.attributes!['end']
-      ? new Date(object.attributes!['end'] as string).getTime() -
-          new Date(object.attributes!['start'] as string).getTime()
-      : 0;
+  calcDurationInMinutes(start: string, end?: string) {
+    let diffMs = end ? new Date(end).getTime() - new Date(start).getTime() : 0;
+    return Math.floor(diffMs / 60000);
   }
 
-  formatDuration(duration: number) {
-    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    const hours = Math.floor(
-      (duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-
-    return `${this.padLeft(hours, 2, '\u00A0') + 'h'} ${
-      minutes > 0 ? this.padLeft(minutes, 2, '\u00A0') + 'm' : ''
-    }`;
+  formatDuration(durationMinutes: number) {
+    const minutes = Math.floor(durationMinutes % 60);
+    const hours = Math.floor((durationMinutes % (60 * 24)) / 60);
+    const days = Math.floor(durationMinutes / (1000 * 60 * 60 * 24));
+    return `
+      ${days > 0 ? this.padLeft(days, 2, '\u00A0') + 'd' : ''}
+      ${hours > 0 ? this.padLeft(hours, 2, '\u00A0') + 'h' : ''}
+      ${minutes > 0 ? this.padLeft(minutes, 2, '\u00A0') + 'm' : ''}
+      `.trim();
   }
 
   padLeft(num: number, size: number, insert: string = ' '): string {

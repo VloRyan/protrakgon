@@ -4,20 +4,12 @@ import { JsonApiService } from '../json-api.service';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { DocumentFormComponent } from '../document-form/document-form-component';
 import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
 
 @Component({
   selector: 'app-activity-detail-component',
-  imports: [
-    MatCard,
-    MatCardContent,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatCheckbox,
-  ],
+  imports: [MatCard, MatCardContent, MatFormField, MatLabel, MatInput],
   template: `
     <form id="item-form" (submit)="onSubmit($event)">
       <mat-card appearance="outlined">
@@ -49,21 +41,38 @@ import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
             />
           </mat-form-field>
           <br />
-          <div
-            class="mat-mdc-form-field"
+          <mat-form-field
+            floatLabel="always"
             [style.width.%]="49"
             [style.padding-right.%]="1"
           >
-            <span>
-              <mat-label>Billable</mat-label>
-              <mat-checkbox
-                type="checkbox"
-                name="billable"
-                [checked]="formValue('billable')"
-                (input)="onInput($event)"
-              ></mat-checkbox>
-            </span>
-          </div>
+            <mat-label>Billable per</mat-label>
+            <select
+              matNativeControl
+              name="billableAmountUnit"
+              #billableAmountUnitSelect
+              (input)="onInput($event)"
+            >
+              <option
+                value="0"
+                [selected]="formValue('billableAmountUnit') == 0"
+              >
+                None
+              </option>
+              <option
+                value="1"
+                [selected]="formValue('billableAmountUnit') == 1"
+              >
+                Per hour
+              </option>
+              <option
+                value="2"
+                [selected]="formValue('billableAmountUnit') == 2"
+              >
+                Per day
+              </option>
+            </select>
+          </mat-form-field>
           <mat-form-field
             floatLabel="always"
             [style.width.%]="49"
