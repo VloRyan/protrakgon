@@ -19,7 +19,7 @@ import (
 	"github.com/vloryan/protrakgon/internal/app/server/request"
 )
 
-type Slot struct {
+type Booking struct {
 	ID          int        `json:"id,omitempty"`
 	Project     *Project   `json:"project,omitempty"`
 	Activity    *Activity  `json:"activity,omitempty"`
@@ -28,9 +28,9 @@ type Slot struct {
 	Description *string    `json:"description,omitempty"`
 }
 
-func (s *Slot) SetIdentifier(id *jsonapi.ResourceIdentifierObject) {
-	if id == nil || id.Type != "project.slot" {
-		log.Error().Msgf("Slot identifier object is invalid")
+func (s *Booking) SetIdentifier(id *jsonapi.ResourceIdentifierObject) {
+	if id == nil || id.Type != "project.booking" {
+		log.Error().Msgf("Booking identifier object is invalid")
 		return
 	}
 	if len(id.ID) == 0 {
@@ -38,15 +38,15 @@ func (s *Slot) SetIdentifier(id *jsonapi.ResourceIdentifierObject) {
 	}
 	idInt, err := strconv.ParseInt(id.ID, 10, 64)
 	if err != nil {
-		log.Err(err).Msg("Slot identifier is not a valid identifier")
+		log.Err(err).Msg("Booking identifier is not a valid identifier")
 		return
 	}
 	s.ID = int(idInt)
 }
 
-func (s *Slot) GetIdentifier() *jsonapi.ResourceIdentifierObject {
+func (s *Booking) GetIdentifier() *jsonapi.ResourceIdentifierObject {
 	id := &jsonapi.ResourceIdentifierObject{
-		Type: "project.slot",
+		Type: "project.booking",
 	}
 	if s.ID != 0 {
 		id.ID = strconv.Itoa(s.ID)
@@ -54,9 +54,9 @@ func (s *Slot) GetIdentifier() *jsonapi.ResourceIdentifierObject {
 	return id
 }
 
-func (s *Slot) Validate() error {
+func (s *Booking) Validate() error {
 	if s == nil {
-		return errors.New("slot is nil")
+		return errors.New("booking is nil")
 	}
 	if s.Start.IsZero() {
 		return errors.New("start is required")
@@ -70,7 +70,7 @@ func (s *Slot) Validate() error {
 	return nil
 }
 
-type SlotFilter struct {
+type BookingFilter struct {
 	ProjectID       *int            `form:"filter[projectId]"`
 	ActivityID      *int            `form:"filter[activityId]"`
 	From            *time.Time      `form:"filter[from]"`
@@ -82,9 +82,9 @@ type SlotFilter struct {
 	Description     *string         `form:"filter[description]"`
 }
 
-func (f *SlotFilter) ToCriteria() filter.Criteria {
+func (f *BookingFilter) ToCriteria() filter.Criteria {
 	criteria := filter.New()
-	tableFilter := filter.NewTable("slot")
+	tableFilter := filter.NewTable("booking")
 	if f.ProjectID != nil {
 		criteria = criteria.And(tableFilter.Column("project_id").Eq(*f.ProjectID))
 	}
@@ -158,38 +158,38 @@ const (
 )
 
 var (
-	ErrOpenSlotExists         = errors.New("open slot exists")
-	ErrSlotEndsBeforeStart    = errors.New("slot ends before start")
-	ErrSlotEndsOnDifferentDay = errors.New("slot ends on different day")
+	ErrOpenBookingExists         = errors.New("open booking exists")
+	ErrBookingEndsBeforeStart    = errors.New("booking ends before start")
+	ErrBookingEndsOnDifferentDay = errors.New("booking ends on different day")
 )
 
-type SlotHandler struct {
-	api.CRUDResourceHandler[*Slot, *SlotFilter]
+type BookingHandler struct {
+	api.CRUDResourceHandler[*Booking, *BookingFilter]
 }
 
-func (h *SlotHandler) RegisterRoutes(route router.RouteElement) {
+func (h *BookingHandler) RegisterRoutes(route router.RouteElement) {
 	h.CRUDResourceHandler.RegisterRoutes(route)
-	route.GET("project/:projectID/slot/csv", h.DownloadCSV)
+	route.GET("project/:projectID/booking/csv", h.DownloadCSV)
 }
 
-func NewSlotHandler() jsonapi.ResourceHandler {
-	api.Register("project.slot", func(tx db.Transaction, id *jsonapi.ResourceIdentifierObject) (*jsonapi.ResourceObject, error) {
+func NewBookingHandler() jsonapi.ResourceHandler {
+	api.Register("project.booking", func(tx db.Transaction, id *jsonapi.ResourceIdentifierObject) (*jsonapi.ResourceObject, error) {
 		iid, _ := strconv.ParseInt(id.ID, 10, 64)
-		item, err := Slots.GetByID(tx, int(iid))
+		item, err := Bookings.GetByID(tx, int(iid))
 		if err != nil || item == nil {
 			return nil, err
 		}
 		return jsonapi.MarshalResourceObject(item, nil)
 	})
 
-	return &SlotHandler{
-		CRUDResourceHandler: api.NewCRUDResourceHandler[*Slot, *SlotFilter](Slots, "project/:projectID/slot").
-			WithOnNew(func(item *Slot, req *http.Request) error {
+	return &BookingHandler{
+		CRUDResourceHandler: api.NewCRUDResourceHandler[*Booking, *BookingFilter](Bookings, "project/:projectID/booking").
+			WithOnNew(func(item *Booking, req *http.Request) error {
 				projectID := request.QueryInt(req, ":projectID", 0)
 				item.Project = &Project{ID: projectID}
 				return nil
 			}).
-			WithBindFilter(func(req *http.Request, f *SlotFilter) error {
+			WithBindFilter(func(req *http.Request, f *BookingFilter) error {
 				if err := httpx.BindQuery(req, f); err != nil {
 					return err
 				}
@@ -204,7 +204,7 @@ func NewSlotHandler() jsonapi.ResourceHandler {
 	}
 }
 
-func (h *SlotHandler) DownloadCSV(writer http.ResponseWriter, req *http.Request) {
+func (h *BookingHandler) DownloadCSV(writer http.ResponseWriter, req *http.Request) {
 	data, err := h.GetAll(req)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -216,95 +216,95 @@ func (h *SlotHandler) DownloadCSV(writer http.ResponseWriter, req *http.Request)
 	}
 	writer.Header().Set("Content-Type", "text/csv")
 	writer.WriteHeader(http.StatusOK)
-	var slots []*Slot
+	var bookings []*Booking
 	for _, item := range data.Items {
-		slots = append(slots, item.Data)
+		bookings = append(bookings, item.Data)
 	}
-	_ = WriteAsCSV(writer, slots)
+	_ = WriteAsCSV(writer, bookings)
 }
 
-type SlotService interface {
-	Save(tx db.Transaction, slot *Slot) error
-	GetAll(tx db.Transaction, page *pagination.Page, filter *SlotFilter) ([]*Slot, error)
-	GetByID(tx db.Transaction, id int) (*Slot, error)
-	GetOpenSlot(tx db.Transaction, projectID int) (*Slot, error)
+type BookingService interface {
+	Save(tx db.Transaction, booking *Booking) error
+	GetAll(tx db.Transaction, page *pagination.Page, filter *BookingFilter) ([]*Booking, error)
+	GetByID(tx db.Transaction, id int) (*Booking, error)
+	GetOpenBooking(tx db.Transaction, projectID int) (*Booking, error)
 	Delete(tx db.Transaction, id int) error
 }
 
-func NewSlotService(repo db.CRUDRepository[*Slot, *SlotFilter]) SlotService {
-	return &slotService{
+func NewBookingService(repo db.CRUDRepository[*Booking, *BookingFilter]) BookingService {
+	return &bookingService{
 		CRUDService: api.NewCRUDService(repo),
 		now:         time.Now,
 	}
 }
 
-type slotService struct {
-	api.CRUDService[*Slot, *SlotFilter]
+type bookingService struct {
+	api.CRUDService[*Booking, *BookingFilter]
 	now func() time.Time
 }
 
-func (s *slotService) Save(tx db.Transaction, slot *Slot) error {
-	if slot.Start.IsZero() {
-		slot.Start = s.now().UTC().Truncate(time.Minute)
+func (s *bookingService) Save(tx db.Transaction, booking *Booking) error {
+	if booking.Start.IsZero() {
+		booking.Start = s.now().UTC().Truncate(time.Minute)
 	}
 
-	slot.Start = slot.Start.UTC().Truncate(time.Minute)
-	if slot.End == nil {
-		activity, err := Activities.GetByID(tx, slot.Activity.ID)
+	booking.Start = booking.Start.UTC().Truncate(time.Minute)
+	if booking.End == nil {
+		activity, err := Activities.GetByID(tx, booking.Activity.ID)
 		if err != nil {
 			return err
 		}
 		if activity.BillableAmountUnit == BillableAmountUnitPerDay {
-			slot.Start = slot.Start.UTC().Truncate(time.Hour)
-			startOfNextDay := slot.Start.UTC().Add(time.Hour * 24)
-			slot.End = &startOfNextDay
+			booking.Start = booking.Start.UTC().Truncate(time.Hour)
+			startOfNextDay := booking.Start.UTC().Add(time.Hour * 24)
+			booking.End = &startOfNextDay
 		} else {
-			openSlot, err := s.GetOpenSlot(tx, slot.Project.ID)
+			openBooking, err := s.GetOpenBooking(tx, booking.Project.ID)
 			if err != nil {
 				return err
 			}
-			if openSlot != nil && openSlot.ID != slot.ID {
-				return ErrOpenSlotExists
+			if openBooking != nil && openBooking.ID != booking.ID {
+				return ErrOpenBookingExists
 			}
 		}
 	} else {
-		newEnd := slot.End.UTC().Truncate(time.Minute)
-		slot.End = &newEnd
-		if slot.Start.After(*slot.End) {
-			return ErrSlotEndsBeforeStart
+		newEnd := booking.End.UTC().Truncate(time.Minute)
+		booking.End = &newEnd
+		if booking.Start.After(*booking.End) {
+			return ErrBookingEndsBeforeStart
 		}
-		if slot.Start.Truncate(24*time.Hour) != newEnd.Truncate(24*time.Hour) {
-			return ErrSlotEndsOnDifferentDay
+		if booking.Start.Truncate(24*time.Hour) != newEnd.Truncate(24*time.Hour) {
+			return ErrBookingEndsOnDifferentDay
 		}
 	}
-	return s.CRUDService.Save(tx, slot)
+	return s.CRUDService.Save(tx, booking)
 }
 
-func (s *slotService) GetOpenSlot(tx db.Transaction, projectID int) (*Slot, error) {
+func (s *bookingService) GetOpenBooking(tx db.Transaction, projectID int) (*Booking, error) {
 	trueConst := true
-	openSlots, err := s.GetAll(tx, pagination.First(), &SlotFilter{
+	openBookings, err := s.GetAll(tx, pagination.First(), &BookingFilter{
 		ProjectID: &projectID,
 		IsOpen:    &trueConst,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(openSlots) > 0 {
-		return openSlots[0], nil
+	if len(openBookings) > 0 {
+		return openBookings[0], nil
 	}
 	return nil, nil
 }
 
-func NewSlotRepository() db.CRUDRepository[*Slot, *SlotFilter] {
-	return api.NewCRUDRepository[*Slot, *SlotFilter](api.RepositoryParams{
-		TableName:   "slot",
+func NewBookingRepository() db.CRUDRepository[*Booking, *BookingFilter] {
+	return api.NewCRUDRepository[*Booking, *BookingFilter](api.RepositoryParams{
+		TableName:   "booking",
 		IDColumn:    "id",
 		ColumnNames: []string{"project_id", "activity_id", "started_at", "ended_at", "description"},
 		Joins: []statement.TableJoinDefinition{{
 			Table: statement.ObjectName{
 				Name: "activity",
 			},
-			OnConditions: []string{"activity.id = slot.activity_id"},
+			OnConditions: []string{"activity.id = booking.activity_id"},
 			SelectFields: []statement.ColumnExpression{
 				{Name: "id", Alias: "Activity.ID"},
 				{Name: "name", Alias: "Activity.Name"},

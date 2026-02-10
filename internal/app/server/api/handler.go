@@ -124,7 +124,7 @@ func (h *DefaultCrudHandler[T, F]) Update(req *http.Request) (data *jsonapi.Docu
 		if errors.As(err, &jErr) {
 			return nil, jErr
 		} else {
-			return nil, jsonapi.NewError(http.StatusInternalServerError, "failed to create slot", err)
+			return nil, jsonapi.NewError(http.StatusInternalServerError, "failed to create booking", err)
 		}
 	}
 	return data, nil

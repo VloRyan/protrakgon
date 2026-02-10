@@ -31,7 +31,7 @@ export enum Comparator {
 }
 
 @Component({
-  selector: 'app-slots-filter-component',
+  selector: 'app-bookings-filter-component',
   imports: [
     FaIconComponent,
     MatButton,
@@ -169,7 +169,7 @@ export enum Comparator {
     </form>
   `,
 })
-export class SlotsFilterComponent implements OnInit {
+export class BookingsFilterComponent implements OnInit {
   projectId = input.required<string>();
   jsonApiService: JsonApiService = inject(JsonApiService);
   queryFilterPrefix = input<string>('');

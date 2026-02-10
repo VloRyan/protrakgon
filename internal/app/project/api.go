@@ -7,13 +7,13 @@ import (
 var (
 	Projects   = NewService(NewRepository())
 	Activities = NewActivityService(NewActivityRepository())
-	Slots      = NewSlotService(NewSlotRepository())
+	Bookings   = NewBookingService(NewBookingRepository())
 )
 
 func Handlers() []jsonapi.ResourceHandler {
 	return []jsonapi.ResourceHandler{
 		NewHandler(),
-		NewSlotHandler(),
+		NewBookingHandler(),
 		NewActivityHandler(),
 	}
 }

@@ -24,7 +24,7 @@ var (
 		Project: defaultProject,
 		Name:    "Work",
 	}
-	defaultOpenSlot = &Slot{
+	defaultOpenBooking = &Booking{
 		ID:       2,
 		Project:  defaultProject,
 		Activity: activityWork,
@@ -32,7 +32,7 @@ var (
 	}
 )
 
-var defaultClosedSlot = &Slot{
+var defaultClosedBooking = &Booking{
 	ID:       1,
 	Project:  defaultProject,
 	Activity: activityWork,
@@ -40,56 +40,56 @@ var defaultClosedSlot = &Slot{
 	End:      testhelper.Ptr(testhelper.FixedNow.Truncate(time.Minute).Add(time.Hour * -1)),
 }
 
-type inMemSlotRepository struct {
-	Slots      []*Slot
-	SavedSlots []*Slot
+type inMemBookingRepository struct {
+	Bookings      []*Booking
+	SavedBookings []*Booking
 }
 
-func (r *inMemSlotRepository) Save(_ db.Transaction, item *Slot) error {
+func (r *inMemBookingRepository) Save(_ db.Transaction, item *Booking) error {
 	if item.ID == 0 {
-		item.ID = len(r.Slots) + 1
+		item.ID = len(r.Bookings) + 1
 	}
-	r.Slots = append(r.Slots, item)
-	r.SavedSlots = append(r.SavedSlots, item)
+	r.Bookings = append(r.Bookings, item)
+	r.SavedBookings = append(r.SavedBookings, item)
 	return nil
 }
 
-func (r *inMemSlotRepository) GetByID(_ db.Transaction, id int) (*Slot, error) {
-	return r.Slots[id], nil
+func (r *inMemBookingRepository) GetByID(_ db.Transaction, id int) (*Booking, error) {
+	return r.Bookings[id], nil
 }
 
-func (r *inMemSlotRepository) GetAll(_ db.Transaction, _ *pagination.Page, filter *SlotFilter) ([]*Slot, error) {
-	var matchingSlot []*Slot
-	for _, slot := range r.Slots {
-		if filter.ProjectID != nil && slot.Project.ID != *filter.ProjectID {
+func (r *inMemBookingRepository) GetAll(_ db.Transaction, _ *pagination.Page, filter *BookingFilter) ([]*Booking, error) {
+	var matchingBooking []*Booking
+	for _, booking := range r.Bookings {
+		if filter.ProjectID != nil && booking.Project.ID != *filter.ProjectID {
 			continue
 		}
-		if filter.ActivityID != nil && slot.Activity.ID != *filter.ActivityID {
+		if filter.ActivityID != nil && booking.Activity.ID != *filter.ActivityID {
 			continue
 		}
-		if filter.From != nil && !r.match(slot.Start, filter.FromComparator, *filter.From) {
+		if filter.From != nil && !r.match(booking.Start, filter.FromComparator, *filter.From) {
 			continue
 		}
 		if filter.Until != nil {
-			if slot.End == nil || !r.match(*slot.End, filter.UntilComparator, *filter.Until) {
+			if booking.End == nil || !r.match(*booking.End, filter.UntilComparator, *filter.Until) {
 				continue
 			}
 		} else {
-			if slot.End != nil {
+			if booking.End != nil {
 				continue
 			}
 		}
-		matchingSlot = append(matchingSlot, slot)
+		matchingBooking = append(matchingBooking, booking)
 	}
-	return matchingSlot, nil
+	return matchingBooking, nil
 }
 
-func (r *inMemSlotRepository) Delete(_ db.Transaction, id int) error {
-	r.Slots = slices.Delete(r.Slots, id, id)
+func (r *inMemBookingRepository) Delete(_ db.Transaction, id int) error {
+	r.Bookings = slices.Delete(r.Bookings, id, id)
 	return nil
 }
 
-func (r *inMemSlotRepository) match(a time.Time, c CompareOperator, b time.Time) bool {
+func (r *inMemBookingRepository) match(a time.Time, c CompareOperator, b time.Time) bool {
 	switch c {
 	case CompareOperatorEqual:
 		return a.Equal(b)
@@ -108,15 +108,15 @@ func (r *inMemSlotRepository) match(a time.Time, c CompareOperator, b time.Time)
 }
 
 type scenario struct {
-	slots []*Slot
+	bookings []*Booking
 }
 
-func buildScenario(g scenario) (SlotService, *inMemSlotRepository) {
-	repo := &inMemSlotRepository{
-		Slots: g.slots,
+func buildScenario(g scenario) (BookingService, *inMemBookingRepository) {
+	repo := &inMemBookingRepository{
+		Bookings: g.bookings,
 	}
-	return &slotService{
-		CRUDService: api.CRUDService[*Slot, *SlotFilter](repo),
+	return &bookingService{
+		CRUDService: api.CRUDService[*Booking, *BookingFilter](repo),
 		now: func() time.Time {
 			return testhelper.FixedNow
 		},
@@ -127,27 +127,27 @@ func buildScenario(g scenario) (SlotService, *inMemSlotRepository) {
 func TestDefaultService_Start(t *testing.T) {
 	tests := []struct {
 		name string
-		slot *Slot
-		want *Slot
+		booking *Booking
+		want *Booking
 	}{{
-		name: "GIVEN slot with projectId and activity THEN set start",
-		slot: &Slot{
+		name: "GIVEN booking with projectId and activity THEN set start",
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 		},
-		want: &Slot{
+		want: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute),
 		},
 	}, {
-		name: "GIVEN slot with start THEN override start",
-		slot: &Slot{
+		name: "GIVEN booking with start THEN override start",
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    time.Time{}.Add(time.Hour * 24),
 		},
-		want: &Slot{
+		want: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute),
@@ -155,40 +155,40 @@ func TestDefaultService_Start(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &slotService{
+			s := &bookingService{
 				now: func() time.Time {
 					return testhelper.FixedNow
 				},
 			}
-			tt.slot.Start=
+			tt.booking.Start=
 
-			if !reflect.DeepEqual(tt.slot, tt.want) {
-				t.Errorf("Start() = %v, want %v", tt.slot, tt.want)
+			if !reflect.DeepEqual(tt.booking, tt.want) {
+				t.Errorf("Start() = %v, want %v", tt.booking, tt.want)
 			}
 		})
 	}
 }
 */
 
-func TestDefaultService_GetOpenSlot(t *testing.T) {
+func TestDefaultService_GetOpenBooking(t *testing.T) {
 	tests := []struct {
 		name      string
 		given     scenario
 		projectID int
-		want      *Slot
+		want      *Booking
 		wantErr   bool
 	}{{
-		name: "GIVEN open slot THEN return open slot",
+		name: "GIVEN open booking THEN return open booking",
 		given: scenario{
-			slots: []*Slot{defaultOpenSlot},
+			bookings: []*Booking{defaultOpenBooking},
 		},
 		projectID: defaultProject.ID,
-		want:      defaultOpenSlot,
+		want:      defaultOpenBooking,
 		wantErr:   false,
 	}, {
-		name: "GIVEN closed slot THEN return nil",
+		name: "GIVEN closed booking THEN return nil",
 		given: scenario{
-			slots: []*Slot{defaultClosedSlot},
+			bookings: []*Booking{defaultClosedBooking},
 		},
 		projectID: defaultProject.ID,
 		want:      nil,
@@ -198,13 +198,13 @@ func TestDefaultService_GetOpenSlot(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s, _ := buildScenario(tt.given)
 
-			got, err := s.GetOpenSlot(nil, tt.projectID)
+			got, err := s.GetOpenBooking(nil, tt.projectID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetOpenSlot() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetOpenBooking() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetOpenSlot() got = %v, want %v", got, tt.want)
+				t.Errorf("GetOpenBooking() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -214,81 +214,81 @@ func TestDefaultService_Save(t *testing.T) {
 	tests := []struct {
 		name    string
 		given   scenario
-		slot    *Slot
-		want    []*Slot
+		booking *Booking
+		want    []*Booking
 		wantErr error
 	}{{
-		name:  "GIVEN open slot and empty database THEN save slot truncated to minutes",
+		name:  "GIVEN open booking and empty database THEN save booking truncated to minutes",
 		given: scenario{},
-		slot: &Slot{
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
 		},
-		want: []*Slot{{
+		want: []*Booking{{
 			ID:       1,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute),
 		}},
 	}, {
-		name:  "GIVEN open slot and open slot in database THEN throw ErrOpenSlotExists",
-		given: scenario{slots: []*Slot{defaultOpenSlot}},
-		slot: &Slot{
+		name:  "GIVEN open booking and open booking in database THEN throw ErrOpenBookingExists",
+		given: scenario{bookings: []*Booking{defaultOpenBooking}},
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
 		},
-		wantErr: ErrOpenSlotExists,
+		wantErr: ErrOpenBookingExists,
 	}, {
-		name: "GIVEN open slot and same open slot in database THEN save slot",
-		given: scenario{slots: []*Slot{{
+		name: "GIVEN open booking and same open booking in database THEN save booking",
+		given: scenario{bookings: []*Booking{{
 			ID:       7,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
 		}}},
-		slot: &Slot{
+		booking: &Booking{
 			ID:       7,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Add(4 * time.Minute),
 		},
-		want: []*Slot{{
+		want: []*Booking{{
 			ID:       7,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute).Add(4 * time.Minute),
 		}},
 	}, {
-		name:  "GIVEN slot with end before start THEN throw ErrSlotEndsBeforeStart",
-		given: scenario{slots: []*Slot{defaultOpenSlot}},
-		slot: &Slot{
+		name:  "GIVEN booking with end before start THEN throw ErrBookingEndsBeforeStart",
+		given: scenario{bookings: []*Booking{defaultOpenBooking}},
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
 			End:      testhelper.Ptr(testhelper.FixedNow.Add(-24 * time.Hour)),
 		},
-		wantErr: ErrSlotEndsBeforeStart,
+		wantErr: ErrBookingEndsBeforeStart,
 	}, {
-		name: "GIVEN slot with end on different day THEN throw illegalEnd",
-		slot: &Slot{
+		name: "GIVEN booking with end on different day THEN throw illegalEnd",
+		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
 			End:      testhelper.Ptr(testhelper.FixedNow.Add(48 * time.Hour)),
 		},
-		wantErr: ErrSlotEndsOnDifferentDay,
+		wantErr: ErrBookingEndsOnDifferentDay,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s, repo := buildScenario(tt.given)
-			err := s.Save(nil, tt.slot)
+			err := s.Save(nil, tt.booking)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Save() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr == nil {
-				if diff := cmp.Diff(tt.want, repo.SavedSlots); diff != "" {
+				if diff := cmp.Diff(tt.want, repo.SavedBookings); diff != "" {
 					t.Errorf("Save() mismatch in repo (-want +got):\n%s", diff)
 				}
 			}

@@ -19,12 +19,12 @@ var activityBreak = &Activity{
 
 func TestWriteAsCSV(t *testing.T) {
 	tests := []struct {
-		name    string
-		slots   []*Slot
-		wantErr bool
+		name     string
+		bookings []*Booking
+		wantErr  bool
 	}{{
-		name: "GIVEN open slot THEN write as csv with empty end and desc",
-		slots: []*Slot{
+		name: "GIVEN open booking THEN write as csv with empty end and desc",
+		bookings: []*Booking{
 			{
 				ID:       0,
 				Activity: activityWork,
@@ -32,8 +32,8 @@ func TestWriteAsCSV(t *testing.T) {
 			},
 		},
 	}, {
-		name: "GIVEN closed slot THEN write as csv with empty desc",
-		slots: []*Slot{
+		name: "GIVEN closed booking THEN write as csv with empty desc",
+		bookings: []*Booking{
 			{
 				ID:       1,
 				Activity: activityBreak,
@@ -42,8 +42,8 @@ func TestWriteAsCSV(t *testing.T) {
 			},
 		},
 	}, {
-		name: "GIVEN slot with desc THEN write as csv with  desc",
-		slots: []*Slot{
+		name: "GIVEN booking with desc THEN write as csv with  desc",
+		bookings: []*Booking{
 			{
 				ID:          2,
 				Project:     &Project{ID: 3},
@@ -53,8 +53,8 @@ func TestWriteAsCSV(t *testing.T) {
 			},
 		},
 	}, {
-		name: "GIVEN multiple slots THEN write as csv with multiple lines",
-		slots: []*Slot{
+		name: "GIVEN multiple bookings THEN write as csv with multiple lines",
+		bookings: []*Booking{
 			{
 				ID:       1,
 				Project:  &Project{ID: 2},
@@ -78,13 +78,13 @@ func TestWriteAsCSV(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writer := &bytes.Buffer{}
-			err := WriteAsCSV(writer, tt.slots)
+			err := WriteAsCSV(writer, tt.bookings)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("WriteAsCSV() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			want := header()
-			for _, slot := range tt.slots {
-				want += toLine(slot)
+			for _, booking := range tt.bookings {
+				want += toLine(booking)
 			}
 			got := writer.String()
 			if diff := cmp.Diff(want, got); diff != "" {
@@ -98,16 +98,6 @@ func header() string {
 	return "id,start,end,activityName,description,billable,amount\n"
 }
 
-type LineType struct {
-	ID           int
-	Start        time.Time
-	End          *time.Time
-	ActivityName string
-	Description  string
-	Billable     bool
-	Amount       float64
-}
-
 func asLine(data []string) string {
 	return strings.Join(data, ",") + "\n"
 }
@@ -119,18 +109,18 @@ func asString(s *string) string {
 	return ""
 }
 
-func toLine(slot *Slot) string {
+func toLine(booking *Booking) string {
 	var end string
-	if slot.End != nil {
-		end = slot.End.Format(time.RFC3339)
+	if booking.End != nil {
+		end = booking.End.Format(time.RFC3339)
 	}
 	return asLine([]string{
-		strconv.Itoa(slot.ID),
-		slot.Start.Format(time.RFC3339),
+		strconv.Itoa(booking.ID),
+		booking.Start.Format(time.RFC3339),
 		end,
-		slot.Activity.Name,
-		asString(slot.Description),
-		strconv.FormatBool(slot.Activity.Billable),
-		strconv.FormatFloat(slot.Activity.Amount, 'f', 2, 64),
+		booking.Activity.Name,
+		asString(booking.Description),
+		strconv.FormatInt(int64(booking.Activity.BillableAmountUnit), 10),
+		strconv.FormatFloat(booking.Activity.Amount, 'f', 2, 64),
 	})
 }

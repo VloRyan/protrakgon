@@ -14,14 +14,14 @@ import { EmptyFetchOpts, findInclude } from '@vloryan/ts-jsonapi-form/jsonapi';
 import { joinPath } from '@vloryan/ts-jsonapi-form/functions';
 import { AppConfigService } from '../app-config.service';
 
-interface SlotType {
+interface BookingType {
   id: string;
   activityName: string;
   activityIcon: string;
 }
 
 @Component({
-  selector: 'app-track-slot-button',
+  selector: 'app-track-booking-button',
   imports: [
     MatMenuTrigger,
     MatMenu,
@@ -32,15 +32,15 @@ interface SlotType {
   ],
   template: `
     <div>
-      @if (openSlot() != undefined) {
+      @if (openBooking() != undefined) {
         <button
           matMiniFab
-          (click)="this.endSlot($event, openSlot()!)"
-          [title]="'Stop tracking ' + openSlot()?.activityName + ' time'"
+          (click)="this.endBooking($event, openBooking()!)"
+          [title]="'Stop tracking ' + openBooking()?.activityName + ' time'"
           style="width: 50px;"
         >
           <fa-icon [icon]="['fas', 'pause']" />
-          <fa-icon [icon]="['fas', openSlot()!.activityIcon + '']" />
+          <fa-icon [icon]="['fas', openBooking()!.activityIcon + '']" />
           <fa-icon
             [icon]="['fas', 'circle']"
             animation="beat-fade"
@@ -64,7 +64,7 @@ interface SlotType {
             } @else {}
           } @else {
             @for (activity of activitiesObjects(); track $index) {
-              <button mat-menu-item (click)="this.startSlot(activity.id)">
+              <button mat-menu-item (click)="this.startBooking(activity.id)">
                 <fa-icon
                   [icon]="['fas', activity.attributes!['icon']! + '']"
                   [style.padding-right.px]="2"
@@ -77,43 +77,43 @@ interface SlotType {
       }
     </div>
   `,
-  styleUrls: ['./track-slot-button.scss'],
+  styleUrls: ['./track-booking-button.component.scss'],
 })
-export class TrackSlotButton implements OnInit {
+export class TrackBookingButton implements OnInit {
   isLoading = signal(true);
   jsonApiService: JsonApiService = inject(JsonApiService);
-  openSlot = signal<SlotType | undefined>(undefined);
+  openBooking = signal<BookingType | undefined>(undefined);
   activitiesObjects = signal<ResourceObject[] | undefined>(undefined);
   projectId = input.required<string>();
   appConfig = inject(AppConfigService);
   protected readonly open = open;
 
   ngOnInit(): void {
-    this.updateOpenSlot();
+    this.updateOpenBooking();
   }
 
-  updateOpenSlot() {
+  updateOpenBooking() {
     this.jsonApiService
-      .GetProjectSlots(this.projectId(), {
+      .GetProjectBookings(this.projectId(), {
         ...EmptyFetchOpts,
         filter: { isOpen: true },
         includes: ['activity'],
       })
       .then((doc) => {
         if (doc?.data == undefined || doc?.data.length == 0) {
-          this.openSlot.set(undefined);
+          this.openBooking.set(undefined);
         } else {
-          const firstSlot = doc!.data[0]!;
+          const firstBooking = doc!.data[0]!;
           const activity = findInclude(
-            firstSlot.relationships!['activity']!
+            firstBooking.relationships!['activity']!
               .data as ResourceIdentifierObject,
             doc.included ?? [],
           );
-          this.openSlot.set({
-            id: firstSlot.id,
+          this.openBooking.set({
+            id: firstBooking.id,
             activityName: activity!.attributes!['name'] as string,
             activityIcon: activity!.attributes!['icon'] as string,
-          } satisfies SlotType);
+          } satisfies BookingType);
         }
       });
   }
@@ -128,13 +128,13 @@ export class TrackSlotButton implements OnInit {
     });
   }
 
-  startSlot(activityId: string) {
+  startBooking(activityId: string) {
     const form = new DocumentForm({
       document: {
         data: {
           id: '',
           lid: '',
-          type: 'project.slot',
+          type: 'project.booking',
           relationships: {
             activity: {
               data: {
@@ -150,7 +150,7 @@ export class TrackSlotButton implements OnInit {
           links: {
             self: joinPath(
               this.appConfig.apiUrl(),
-              `project/${this.projectId()}/slot`,
+              `project/${this.projectId()}/booking`,
             ),
           },
         },
@@ -161,26 +161,26 @@ export class TrackSlotButton implements OnInit {
         errors: undefined,
       } as SingleResourceDoc,
     });
-    form.submit().then(() => this.updateOpenSlot());
+    form.submit().then(() => this.updateOpenBooking());
   }
 
-  endSlot(ev: MouseEvent, slot: SlotType) {
+  endBooking(ev: MouseEvent, booking: BookingType) {
     ev.stopPropagation();
     ev.preventDefault();
     const form = new DocumentForm({
       document: {
         data: {
-          id: slot.id,
+          id: booking.id,
           lid: '',
-          type: 'project.slot',
+          type: 'project.booking',
           attributes: {
             end: new Date().toISOString(),
           },
           links: {
             self: joinPath(
               this.appConfig.apiUrl(),
-              `project/${this.projectId()}/slot`,
-              slot.id,
+              `project/${this.projectId()}/booking`,
+              booking.id,
             ),
           },
         },
@@ -191,6 +191,6 @@ export class TrackSlotButton implements OnInit {
         errors: undefined,
       } as SingleResourceDoc,
     });
-    form.submit().then(() => this.updateOpenSlot());
+    form.submit().then(() => this.updateOpenBooking());
   }
 }

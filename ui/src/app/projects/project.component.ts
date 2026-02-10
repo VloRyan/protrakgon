@@ -23,7 +23,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { MatMiniFabButton } from '@angular/material/button';
 import { ProjectClientCell } from './client.cell.component';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
-import { TrackSlotButton } from './track-slot-button';
+import { TrackBookingButton } from './track-booking-button.component';
 import { DocumentTableComponent } from '../document-form/document-table-component';
 
 @Component({
@@ -47,7 +47,7 @@ import { DocumentTableComponent } from '../document-form/document-table-componen
     ProjectClientCell,
     MatGridList,
     MatGridTile,
-    TrackSlotButton,
+    TrackBookingButton,
   ],
   template: `
     <section class="results">
@@ -86,9 +86,9 @@ import { DocumentTableComponent } from '../document-form/document-table-componen
             <span class="action-spacer"></span>
             <mat-grid-list cols="2" style="width: 100px" rowHeight="40px">
               <mat-grid-tile>
-                <app-track-slot-button
+                <app-track-booking-button
                   [projectId]="item.id"
-                ></app-track-slot-button>
+                ></app-track-booking-button>
               </mat-grid-tile>
               <mat-grid-tile>
                 <button matMiniFab (click)="deleteItem($event, item.id)">

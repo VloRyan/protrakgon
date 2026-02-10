@@ -18,7 +18,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs';
 import { ActivitiesCardComponent } from '../activities/activities-card-component';
-import { SlotsCardComponent } from '../slots/slots-card-component';
+import { BookingsCardComponent } from '../bookings/bookings-card-component';
 import {
   EmptyFetchOpts,
   extractFetchOpts,
@@ -39,7 +39,7 @@ import { DocumentFormComponent } from '../document-form/document-form-component'
     MatAutocompleteTrigger,
     MatProgressSpinner,
     ActivitiesCardComponent,
-    SlotsCardComponent,
+    BookingsCardComponent,
   ],
   template: `
     <mat-card appearance="outlined">
@@ -103,11 +103,13 @@ import { DocumentFormComponent } from '../document-form/document-form-component'
         [projectId]="projectId()"
       ></app-activities-card-component>
       <br />
-      <app-slots-card-component
+      <app-bookings-card-component
         [projectId]="projectId()"
-        [fetchOpts]="fetchOptsWithFilterAndSort(this.slotsFilter(), '-start')"
-        queryFilterPrefix="slots"
-      ></app-slots-card-component>
+        [fetchOpts]="
+          fetchOptsWithFilterAndSort(this.bookingsFilter(), '-start')
+        "
+        queryFilterPrefix="bookings"
+      ></app-bookings-card-component>
     }
   `,
   styleUrl: './project-detail.scss',
@@ -154,10 +156,10 @@ export class ProjectDetail extends DocumentFormComponent {
     return { ...EmptyFetchOpts, filter: filter, sort: sort };
   }
 
-  slotsFilter(): ObjectLike {
+  bookingsFilter(): ObjectLike {
     return this.fetchOpts.filter != undefined &&
-      this.fetchOpts.filter['slots'] != undefined
-      ? (this.fetchOpts.filter['slots'] as ObjectLike)
+      this.fetchOpts.filter['bookings'] != undefined
+      ? (this.fetchOpts.filter['bookings'] as ObjectLike)
       : {};
   }
 

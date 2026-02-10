@@ -19,7 +19,7 @@ import { MatCardModule } from '@angular/material/card';
 })
 export class DashboardComponent {
   cards = [
-    { title: 'Open slots', cols: 2, rows: 1 },
+    { title: 'Open bookings', cols: 2, rows: 1 },
     { title: 'Card 2', cols: 1, rows: 1 },
     { title: 'Card 32', cols: 1, rows: 2 },
     { title: 'Card 4', cols: 1, rows: 1 },

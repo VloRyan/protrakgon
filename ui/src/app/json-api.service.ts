@@ -229,12 +229,12 @@ export class JsonApiService {
     );
   }
 
-  async GetProjectSlots(
+  async GetProjectBookings(
     projectId: string,
     opts: FetchOpts = this.emptyOpts,
   ): Promise<CollectionResourceDoc | undefined> {
     return fetchResource(
-      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/slot'),
+      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking'),
       opts,
     )
       .then((doc) => {
@@ -248,7 +248,7 @@ export class JsonApiService {
       });
   }
 
-  async GetProjectSlot(
+  async GetProjectBooking(
     projectId: string,
     id: string,
   ): Promise<SingleResourceDoc | undefined> {
@@ -259,7 +259,7 @@ export class JsonApiService {
       sort: undefined,
     };
     return fetchResource(
-      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/slot/', id),
+      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking/', id),
       opts,
     )
       .then((doc) => {
@@ -273,7 +273,7 @@ export class JsonApiService {
       });
   }
 
-  async DeleteSlot(projectId: string, id: string) {
+  async DeleteBooking(projectId: string, id: string) {
     const opts: FetchOpts = {
       page: undefined,
       filter: undefined,
@@ -281,7 +281,7 @@ export class JsonApiService {
       sort: undefined,
     };
     return deleteResource(
-      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/slot/', id),
+      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking/', id),
       opts,
     );
   }

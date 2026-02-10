@@ -1,0 +1,1 @@
+ALTER TABLE slot RENAME TO booking

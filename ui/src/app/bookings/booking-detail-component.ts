@@ -16,7 +16,7 @@ import { DocumentFormComponent } from '../document-form/document-form-component'
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 
 @Component({
-  selector: 'app-slot-detail-component',
+  selector: 'app-booking-detail-component',
   imports: [
     MatCard,
     MatCardContent,
@@ -128,9 +128,9 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
       </mat-card-content>
     </mat-card>
   `,
-  styleUrl: './slot-detail-component.scss',
+  styleUrl: './booking-detail-component.scss',
 })
-export class SlotDetailComponent extends DocumentFormComponent {
+export class BookingDetailComponent extends DocumentFormComponent {
   activitySelect = new MatSelect();
   activitiesLoaded = signal<boolean>(false);
   activities: ResourceObject[] = [];
@@ -139,10 +139,10 @@ export class SlotDetailComponent extends DocumentFormComponent {
   jsonApiService: JsonApiService = inject(JsonApiService);
 
   constructor() {
-    super('Slot', '', '');
+    super('Booking', '', '');
     const projectId = this.route.snapshot.params['project-id'];
-    this.baseUrl = 'project/' + projectId + '/slot';
-    this.baseApiUrl = 'project/' + projectId + '/slot';
+    this.baseUrl = 'project/' + projectId + '/booking';
+    this.baseApiUrl = 'project/' + projectId + '/booking';
   }
 
   override ngOnInit() {
@@ -221,7 +221,7 @@ export class SlotDetailComponent extends DocumentFormComponent {
 
   protected override loadDocument(): Promise<SingleResourceDoc | undefined> {
     const projectId = this.route.snapshot.params['project-id'];
-    return this.jsonApiService.GetProjectSlot(
+    return this.jsonApiService.GetProjectBooking(
       projectId,
       this.route.snapshot.params['id'],
     );

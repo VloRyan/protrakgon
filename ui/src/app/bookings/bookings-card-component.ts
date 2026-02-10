@@ -40,7 +40,7 @@ import { formatDateString, joinPath } from '@vloryan/ts-jsonapi-form/functions';
 import { FormsModule } from '@angular/forms';
 
 import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
-import { SlotsFilterComponent } from './slots-filter-component';
+import { BookingsFilterComponent } from './bookings-filter-component';
 import {
   DocumentTableComponent,
   Group,
@@ -65,7 +65,7 @@ export interface ActivitySummary {
 }
 
 @Component({
-  selector: 'app-slots-card-component',
+  selector: 'app-bookings-card-component',
   imports: [
     MatCard,
     MatCardHeader,
@@ -90,27 +90,27 @@ export interface ActivitySummary {
 
     MatSidenav,
     MatSidenavContainer,
-    SlotsFilterComponent,
+    BookingsFilterComponent,
   ],
   template: `
     <mat-sidenav-container [style.min-height.px]="500">
       <mat-sidenav #filterBar position="end" mode="push">
-        <app-slots-filter-component
+        <app-bookings-filter-component
           [projectId]="this.projectId()"
           [fetchOpts]="this.fetchOpts()"
           [queryFilterPrefix]="this.queryFilterPrefix()"
           (filterChanged)="onFilterChanged($event, filterBar)"
-        ></app-slots-filter-component>
+        ></app-bookings-filter-component>
       </mat-sidenav>
       <mat-card appearance="outlined">
         <mat-card-header>
-          <mat-card-title>Slots</mat-card-title>
+          <mat-card-title>Bookings</mat-card-title>
           <span class="toolbar-spacer"></span>
           <a
             matButton="outlined"
             title="Download .csv file"
             [href]="this.csvDownloadLink()"
-            [download]="'slots_' + this.projectId() + '.csv'"
+            [download]="'bookings_' + this.projectId() + '.csv'"
           >
             <fa-icon [icon]="['fas', 'file-download']" />
           </a>
@@ -122,7 +122,7 @@ export interface ActivitySummary {
             <fa-icon [icon]="['fas', 'minimize']" />
           </button>
           <a
-            [routerLink]="['/project', this.projectId(), 'slot', 'new']"
+            [routerLink]="['/project', this.projectId(), 'booking', 'new']"
             matButton="outlined"
           >
             <fa-icon [icon]="['fas', 'plus']" />
@@ -207,7 +207,12 @@ export interface ActivitySummary {
               <tr
                 mat-row
                 class="row-hover"
-                [routerLink]="['/project', this.projectId(), 'slot', item.id]"
+                [routerLink]="[
+                  '/project',
+                  this.projectId(),
+                  'booking',
+                  item.id,
+                ]"
                 *matRowDef="let item; columns: displayedColumns"
               ></tr>
 
@@ -247,9 +252,9 @@ export interface ActivitySummary {
       </mat-card>
     </mat-sidenav-container>
   `,
-  styleUrl: './slots-card-component.scss',
+  styleUrl: './bookings-card-component.scss',
 })
-export class SlotsCardComponent extends DocumentTableComponent {
+export class BookingsCardComponent extends DocumentTableComponent {
   appConfig = inject(AppConfigService);
   displayedColumns: string[] = ['activity', 'amount', 'description', 'actions'];
   projectId = input.required<string>();
@@ -263,7 +268,7 @@ export class SlotsCardComponent extends DocumentTableComponent {
   router: Router = inject(Router);
 
   constructor() {
-    super('Slot');
+    super('Booking');
   }
 
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
@@ -481,11 +486,11 @@ export class SlotsCardComponent extends DocumentTableComponent {
         this.appConfig.apiUrl(),
         'project/',
         this.projectId(),
-        '/slot/csv',
+        '/booking/csv',
       ) + buildQueryString(this.fetchOpts()),
     );
     return this.jsonApiService
-      .GetProjectSlots(this.projectId(), {
+      .GetProjectBookings(this.projectId(), {
         ...this.fetchOpts(),
         includes: ['activity'],
       })
@@ -498,6 +503,6 @@ export class SlotsCardComponent extends DocumentTableComponent {
   protected override deleteObject(
     id: string,
   ): Promise<Document<PrimaryData> | null> {
-    return this.jsonApiService.DeleteSlot(this.projectId(), id);
+    return this.jsonApiService.DeleteBooking(this.projectId(), id);
   }
 }

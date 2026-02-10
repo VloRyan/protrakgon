@@ -6,7 +6,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { ProjectComponent } from './projects/project.component';
 import { ProjectDetail } from './projects/project-detail';
 import { ActivityDetailComponent } from './activities/activity-detail-component';
-import { SlotDetailComponent } from './slots/slot-detail-component';
+import { BookingDetailComponent } from './bookings/booking-detail-component';
 
 export interface RouteAction {
   caption: string;
@@ -86,9 +86,9 @@ export const routes: Routes = [
     },
   },
   {
-    path: 'project/:project-id/slot/:id',
-    component: SlotDetailComponent,
-    title: 'Project Slot Detail',
+    path: 'project/:project-id/booking/:id',
+    component: BookingDetailComponent,
+    title: 'Project Booking Detail',
     data: {
       actions: [
         { caption: 'Save', icon: ['fas', 'save'], type: 'submit' },
