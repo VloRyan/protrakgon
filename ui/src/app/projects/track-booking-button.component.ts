@@ -122,10 +122,12 @@ export class TrackBookingButton implements OnInit {
     ev.stopPropagation();
     ev.preventDefault();
     this.isLoading.set(true);
-    this.jsonApiService.GetProjectActivities(this.projectId()).then((doc) => {
-      this.activitiesObjects.set(doc?.data);
-      this.isLoading.set(false);
-    });
+    this.jsonApiService
+      .GetProjectActivities(this.projectId(), { billableAmountUnits: [0, 1] })
+      .then((doc) => {
+        this.activitiesObjects.set(doc?.data);
+        this.isLoading.set(false);
+      });
   }
 
   startBooking(activityId: string) {

@@ -60,11 +60,11 @@ func (p *Activity) GetIdentifier() *jsonapi.ResourceIdentifierObject {
 }
 
 type ActivityFilter struct {
-	ID                 *int     `form:"filter[id]"`
-	Name               string   `form:"filter[name]"`
-	ProjectID          *int     `form:"filter[projectId]"`
-	BillableAmountUnit *bool    `form:"filter[billableAmountUnit]"`
-	Amount             *float64 `form:"filter[amount]"`
+	ID                  *int     `form:"filter[id]"`
+	Name                string   `form:"filter[name]"`
+	ProjectID           *int     `form:"filter[projectId]"`
+	BillableAmountUnits []int    `form:"filter[billableAmountUnits]"`
+	Amount              *float64 `form:"filter[amount]"`
 }
 
 func (f *ActivityFilter) ToCriteria() filter.Criteria {
@@ -81,8 +81,12 @@ func (f *ActivityFilter) ToCriteria() filter.Criteria {
 	if f.ProjectID != nil {
 		criteria = criteria.And(tableFilter.Column("project_id").Eq(*f.ProjectID))
 	}
-	if f.BillableAmountUnit != nil {
-		criteria = criteria.And(tableFilter.Column("billable_amount_unit").Eq(*f.BillableAmountUnit))
+	if len(f.BillableAmountUnits) > 0 {
+		values := make([]any, len(f.BillableAmountUnits))
+		for i := range f.BillableAmountUnits {
+			values[i] = f.BillableAmountUnits[i]
+		}
+		criteria = criteria.And(tableFilter.Column("billable_amount_unit").In(values))
 	}
 	if f.Amount != nil {
 		criteria = criteria.And(tableFilter.Column("amount").Eq(*f.Amount))
