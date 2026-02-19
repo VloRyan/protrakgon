@@ -4,16 +4,21 @@ import {
   deleteResource,
   FetchOpts,
   fetchResource,
+  InvalidServerResponseError,
   MEDIA_TYPE,
 } from '@vloryan/ts-jsonapi-form/jsonapi';
 import {
+  ApiError,
   CollectionResourceDoc,
+  type Document as APIDocument,
   SingleResourceDoc,
 } from '@vloryan/ts-jsonapi-form/jsonapi/model';
 import { AppConfigService } from './app-config.service';
 import { joinPath } from '@vloryan/ts-jsonapi-form/functions';
 import { Observable, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { ObjectLike } from '@vloryan/ts-jsonapi-form/jsonapi/model/Types';
+import { StatusCodes } from 'http-status-codes';
 
 @Injectable({
   providedIn: 'root',
@@ -157,10 +162,11 @@ export class JsonApiService {
 
   async GetProjectActivities(
     projectId: string,
+    filter: ObjectLike | undefined = undefined,
   ): Promise<CollectionResourceDoc | undefined> {
     const opts: FetchOpts = {
       page: undefined,
-      filter: undefined,
+      filter: filter,
       includes: undefined,
       sort: undefined,
     };
@@ -284,5 +290,42 @@ export class JsonApiService {
       joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking/', id),
       opts,
     );
+  }
+
+  async AddBookingsBulk(projectId: string, text: string) {
+    /*let doc = createDocument({
+      type: 'project.booking.bulk',
+      attributes: { text: text } as AttributesObject,
+    } as ResourceObject);
+    return updateResource(
+      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking/bulk'),
+      doc,
+    );*/
+    let bodyObject = { lines: text.split('\n') };
+    return fetch(
+      joinPath(this.appConfig.apiUrl(), 'project/', projectId, '/booking/bulk'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyObject),
+      },
+    ).then(async (resp) => {
+      if (resp.status == StatusCodes.NO_CONTENT) {
+        return null;
+      }
+      if (!resp.headers.get('content-type')?.startsWith(MEDIA_TYPE)) {
+        throw InvalidServerResponseError(resp);
+      }
+      const doc = (await resp.json()) as APIDocument;
+      if (!resp.ok) {
+        if (!doc.errors) {
+          throw new Error(
+            'Unknown server error: ' + resp.status + ' - ' + resp.statusText,
+          );
+        }
+        throw new ApiError(doc.errors);
+      }
+      return doc;
+    });
   }
 }

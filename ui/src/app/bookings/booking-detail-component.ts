@@ -14,6 +14,7 @@ import {
 } from '@vloryan/ts-jsonapi-form/jsonapi/model';
 import { DocumentFormComponent } from '../document-form/document-form-component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-booking-detail-component',
@@ -25,6 +26,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
     MatInput,
     FaIconComponent,
     MatProgressSpinner,
+    FormsModule,
   ],
   template: `
     <mat-card appearance="outlined">
@@ -66,47 +68,47 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
             </mat-form-field>
             <mat-form-field
               floatLabel="always"
-              [style.width.%]="24"
+              [style.width.%]="19"
               [style.padding-right.%]="1"
             >
-              <mat-label>
-                @if (this.billableAmountUnit() == 2) {
-                  At
-                } @else {
-                  Start
-                }
-              </mat-label>
-              @if (this.billableAmountUnit() == 2) {
-                <input
-                  matInput
-                  name="start"
-                  type="date"
-                  [defaultValue]="formValueAsDate('start')"
-                  (input)="onInput($event)"
-                />
-              } @else {
-                <input
-                  matInput
-                  name="start"
-                  type="datetime-local"
-                  [defaultValue]="formValueAsLocalDateTime('start')"
-                  (input)="onInput($event)"
-                />
-              }
+              <mat-label> Date </mat-label>
+              <input
+                #dateField
+                matInput
+                name="date"
+                type="date"
+                min="2026-01-01"
+                max="2026-12-31"
+                [defaultValue]="
+                  this.formValue('start') ? formValueAsDate('start') : today()
+                "
+                (input)="onInput($event)"
+              />
             </mat-form-field>
+
             @if (this.billableAmountUnit() != 2) {
-              <mat-form-field
-                floatLabel="always"
-                [style.width.%]="24"
-                [style.padding-left.%]="1"
-              >
+              <mat-form-field floatLabel="always" [style.width.%]="15">
+                <mat-label> Start </mat-label>
+                <input
+                  matInput
+                  name="start"
+                  type="time"
+                  [defaultValue]="
+                    this.formValue('start')
+                      ? formValueAsTime('start')
+                      : nowAsTime()
+                  "
+                  (input)="setRelativeTime($event, dateField.value)"
+                />
+              </mat-form-field>
+              <mat-form-field floatLabel="always" [style.width.%]="15">
                 <mat-label>End</mat-label>
                 <input
                   matInput
                   name="end"
-                  type="datetime-local"
-                  [defaultValue]="formValueAsLocalDateTime('end')"
-                  (input)="onInput($event)"
+                  type="time"
+                  [defaultValue]="formValueAsTime('end')"
+                  (input)="setRelativeTime($event, dateField.value)"
                 />
               </mat-form-field>
             }
@@ -176,6 +178,15 @@ export class BookingDetailComponent extends DocumentFormComponent {
     });
   }
 
+  setRelativeTime(ev: Event, atDate: string) {
+    let element = ev.target as HTMLInputElement;
+    let dateStr = atDate + 'T' + element.value + ':00';
+    let date = new Date(dateStr);
+    let field = element.name;
+    this.form()?.setValue(field, date.toISOString().slice(0, 19) + 'Z');
+    this.form()?.setValue('amount', -1);
+  }
+
   formValueAsLocalDateTime(name: string) {
     const value = this.formValue(name) as string | undefined;
     if (!value) {
@@ -186,6 +197,22 @@ export class BookingDetailComponent extends DocumentFormComponent {
       date.toISOString().substring(0, 11) +
       date.toLocaleTimeString().substring(0, 5)
     );
+  }
+
+  today() {
+    return new Date().toISOString().substring(0, 10);
+  }
+  nowAsTime() {
+    return new Date().toLocaleTimeString().substring(0, 5);
+  }
+
+  formValueAsTime(name: string) {
+    const value = this.formValue(name) as string | undefined;
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    return date.toLocaleTimeString().substring(0, 5);
   }
 
   formValueAsDate(name: string) {

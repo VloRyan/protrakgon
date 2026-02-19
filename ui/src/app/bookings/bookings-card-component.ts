@@ -46,6 +46,9 @@ import {
   Group,
 } from '../document-form/document-table-component';
 import { AppConfigService } from '../app-config.service';
+import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
+import { BulkAddBookingsComponent } from './bulk-add-bookings-component';
+import { MatDialog } from '@angular/material/dialog';
 
 export enum Comparator {
   Eq = 0,
@@ -91,6 +94,9 @@ export interface ActivitySummary {
     MatSidenav,
     MatSidenavContainer,
     BookingsFilterComponent,
+    MatMenu,
+    MatMenuItem,
+    MatMenuTrigger,
   ],
   template: `
     <mat-sidenav-container [style.min-height.px]="500">
@@ -135,6 +141,19 @@ export interface ActivitySummary {
           >
             <fa-icon [icon]="['fas', 'filter']" />
           </button>
+          <button
+            matButton="outlined"
+            [matMenuTriggerFor]="actionsMenu"
+            title="Actions"
+          >
+            <fa-icon [icon]="['fas', 'ellipsis-vertical']" />
+          </button>
+          <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="openBulkAddBookingsDialog()">
+              <fa-icon [icon]="['fas', 'list']" [style.padding-right.px]="2" />
+              Bulk add
+            </button>
+          </mat-menu>
         </mat-card-header>
         <mat-card-content>
           @if (isLoading()) {
@@ -161,17 +180,14 @@ export interface ActivitySummary {
                 <td mat-cell *matCellDef="let item">
                   @let activity = findActivity(item);
                   @if (activity?.attributes!['billableAmountUnit']! != 2) {
-                    {{ valueAsLocalTime(item.attributes.start) }} -
-                    {{ valueAsLocalTime(item.attributes.end) }} ({{
-                      this.formatDuration(
-                        this.calcDurationInMinutes(
-                          item.attributes!['start'],
-                          item.attributes?.['end']
-                        )
+                    {{
+                      formatBookingSlotDuration(
+                        item.attributes.start,
+                        item.attributes.end
                       )
-                    }})
+                    }}
                   } @else {
-                    1
+                    {{ item.attributes!['amount'] }}
                   }
                 </td>
               </ng-container>
@@ -180,7 +196,7 @@ export interface ActivitySummary {
                 <td
                   mat-cell
                   *matCellDef="let item"
-                  [style.white-space]="wrapText() ? ' pre-wrap' : ''"
+                  [style.white-space]="wrapText() ? 'pre-line' : ''"
                 >
                   {{ item.attributes.description }}
                 </td>
@@ -266,6 +282,8 @@ export class BookingsCardComponent extends DocumentTableComponent {
   activities = signal<ResourceObject[]>([]);
   csvDownloadLink = signal('');
   router: Router = inject(Router);
+  readonly dialog = inject(MatDialog);
+  protected readonly event = event;
 
   constructor() {
     super('Booking');
@@ -321,7 +339,7 @@ export class BookingsCardComponent extends DocumentTableComponent {
               item.attributes!['start'] as string,
               item.attributes!['end'] as string | undefined,
             )
-          : 1;
+          : (item.attributes!['amount'] as number);
 
       if (startDate !== currentGroup.caption) {
         currentGroup = {
@@ -392,6 +410,19 @@ export class BookingsCardComponent extends DocumentTableComponent {
   calcDurationInMinutes(start: string, end?: string) {
     let diffMs = end ? new Date(end).getTime() - new Date(start).getTime() : 0;
     return Math.floor(diffMs / 60000);
+  }
+
+  formatBookingSlotDuration(start: string, end: string | null) {
+    return (
+      this.valueAsLocalTime(start) +
+      (end
+        ? ' - ' +
+          this.valueAsLocalTime(end) +
+          ' (' +
+          this.formatDuration(this.calcDurationInMinutes(start, end)) +
+          ')'
+        : '')
+    );
   }
 
   formatDuration(durationMinutes: number) {
@@ -475,6 +506,18 @@ export class BookingsCardComponent extends DocumentTableComponent {
     filterBar.close().then(() => {
       this.fetchOpts().filter = filter;
       this.refreshRows();
+    });
+  }
+
+  openBulkAddBookingsDialog() {
+    const dialogRef = this.dialog.open(BulkAddBookingsComponent, {
+      height: '300px',
+      width: '600px',
+      data: { projectId: this.projectId() },
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      console.log('The dialog was closed');
     });
   }
 

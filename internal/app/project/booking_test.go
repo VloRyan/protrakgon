@@ -20,15 +20,17 @@ var (
 		Name: "Default",
 	}
 	activityWork = &Activity{
-		ID:      1,
-		Project: defaultProject,
-		Name:    "Work",
+		ID:                 1,
+		Project:            defaultProject,
+		BillableAmountUnit: BillableAmountUnitPerHour,
+		Name:               "Work",
 	}
 	defaultOpenBooking = &Booking{
 		ID:       2,
 		Project:  defaultProject,
 		Activity: activityWork,
 		Start:    testhelper.FixedNow.Truncate(time.Minute),
+		Amount:   -1,
 	}
 )
 
@@ -38,6 +40,7 @@ var defaultClosedBooking = &Booking{
 	Activity: activityWork,
 	Start:    testhelper.FixedNow.Truncate(time.Minute).Add(time.Hour * -24),
 	End:      testhelper.Ptr(testhelper.FixedNow.Truncate(time.Minute).Add(time.Hour * -1)),
+	Amount:   60,
 }
 
 type inMemBookingRepository struct {
@@ -108,7 +111,38 @@ func (r *inMemBookingRepository) match(a time.Time, c CompareOperator, b time.Ti
 }
 
 type scenario struct {
-	bookings []*Booking
+	bookings   []*Booking
+	activities []*Activity
+}
+type activityServiceMock struct {
+	Content []*Activity
+}
+
+func (a *activityServiceMock) Save(tx db.Transaction, item *Activity) error {
+	a.Content = append(a.Content, item)
+	return nil
+}
+
+func (a *activityServiceMock) GetAll(tx db.Transaction, page *pagination.Page, filter *ActivityFilter) ([]*Activity, error) {
+	return a.Content, nil
+}
+
+func (a *activityServiceMock) GetByID(tx db.Transaction, id int) (*Activity, error) {
+	for _, activity := range a.Content {
+		if activity.ID == id {
+			return activity, nil
+		}
+	}
+	return nil, nil
+}
+
+func (a *activityServiceMock) Delete(tx db.Transaction, id int) error {
+	for i, activity := range a.Content {
+		if activity.ID == id {
+			a.Content = append(a.Content[:i], a.Content[i+1:]...)
+		}
+	}
+	return nil
 }
 
 func buildScenario(g scenario) (BookingService, *inMemBookingRepository) {
@@ -116,10 +150,11 @@ func buildScenario(g scenario) (BookingService, *inMemBookingRepository) {
 		Bookings: g.bookings,
 	}
 	return &bookingService{
-		CRUDService: api.CRUDService[*Booking, *BookingFilter](repo),
+		CRUDService: api.NewCRUDService(repo),
 		now: func() time.Time {
 			return testhelper.FixedNow
 		},
+		activityService: &activityServiceMock{Content: g.activities},
 	}, repo
 }
 
@@ -219,25 +254,28 @@ func TestDefaultService_Save(t *testing.T) {
 		wantErr error
 	}{{
 		name:  "GIVEN open booking and empty database THEN save booking truncated to minutes",
-		given: scenario{},
+		given: scenario{activities: []*Activity{activityWork}},
 		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
+			Amount:   -1,
 		},
 		want: []*Booking{{
 			ID:       1,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute),
+			Amount:   -1,
 		}},
 	}, {
 		name:  "GIVEN open booking and open booking in database THEN throw ErrOpenBookingExists",
-		given: scenario{bookings: []*Booking{defaultOpenBooking}},
+		given: scenario{bookings: []*Booking{defaultOpenBooking}, activities: []*Activity{activityWork}},
 		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
+			Amount:   -1,
 		},
 		wantErr: ErrOpenBookingExists,
 	}, {
@@ -247,22 +285,25 @@ func TestDefaultService_Save(t *testing.T) {
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow,
-		}}},
+			Amount:   -1,
+		}}, activities: []*Activity{activityWork}},
 		booking: &Booking{
 			ID:       7,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Add(4 * time.Minute),
+			Amount:   -1,
 		},
 		want: []*Booking{{
 			ID:       7,
 			Project:  defaultProject,
 			Activity: activityWork,
 			Start:    testhelper.FixedNow.Truncate(time.Minute).Add(4 * time.Minute),
+			Amount:   -1,
 		}},
 	}, {
 		name:  "GIVEN booking with end before start THEN throw ErrBookingEndsBeforeStart",
-		given: scenario{bookings: []*Booking{defaultOpenBooking}},
+		given: scenario{bookings: []*Booking{defaultOpenBooking}, activities: []*Activity{activityWork}},
 		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
@@ -271,7 +312,8 @@ func TestDefaultService_Save(t *testing.T) {
 		},
 		wantErr: ErrBookingEndsBeforeStart,
 	}, {
-		name: "GIVEN booking with end on different day THEN throw illegalEnd",
+		name:  "GIVEN booking with end on different day THEN throw illegalEnd",
+		given: scenario{activities: []*Activity{activityWork}},
 		booking: &Booking{
 			Project:  defaultProject,
 			Activity: activityWork,
@@ -279,6 +321,24 @@ func TestDefaultService_Save(t *testing.T) {
 			End:      testhelper.Ptr(testhelper.FixedNow.Add(48 * time.Hour)),
 		},
 		wantErr: ErrBookingEndsOnDifferentDay,
+	}, {
+		name: "GIVEN booking with unknown activity THEN throw unknownActivity",
+		booking: &Booking{
+			Project:  defaultProject,
+			Activity: activityWork,
+		},
+		wantErr: ErrUnknownActivity,
+	}, {
+		name:  "GIVEN booking with invalid amount THEN throw amountDiffToEnd",
+		given: scenario{activities: []*Activity{activityWork}},
+		booking: &Booking{
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    testhelper.FixedNow,
+			End:      testhelper.Ptr(testhelper.FixedNow.Add(1 * time.Hour)), // 60
+			Amount:   120,
+		},
+		wantErr: ErrAmountDiffToEnd,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
