@@ -1,7 +1,10 @@
 import { Component, Inject, inject, OnInit, signal } from '@angular/core';
 import { DocumentForm, DocumentFormProps } from '@vloryan/ts-jsonapi-form/form';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
+import {
+  ApiError,
+  SingleResourceDoc,
+} from '@vloryan/ts-jsonapi-form/jsonapi/model';
 import { Router } from '@angular/router';
 import { joinPath } from '@vloryan/ts-jsonapi-form/functions';
 import { AppConfigService } from '../app-config.service';
@@ -54,19 +57,8 @@ export abstract class DocumentFormComponent implements OnInit {
         if (!object) {
           return;
         }
-
-        this.snackBar.open(
-          this.objectName + ' ' + verb + 'd successfully.',
-          '',
-          {
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['success-snackbar'],
-            duration: 3000,
-          },
-        );
         this.router
-          .navigate([this.appConfig.contextRoot(), this.baseUrl, object.id], {
+          .navigate([this.baseUrl, object.id], {
             replaceUrl: true,
           })
           .then(() => {
@@ -80,11 +72,28 @@ export abstract class DocumentFormComponent implements OnInit {
                 ),
               } satisfies DocumentFormProps),
             );
+            this.snackBar.open(
+              this.objectName + ' ' + verb + 'd successfully.',
+              '',
+              {
+                horizontalPosition: 'end',
+                verticalPosition: 'top',
+                panelClass: ['success-snackbar'],
+                duration: 3000,
+              },
+            );
+          })
+          .catch((error) => {
+            console.log(error);
           });
       })
       .catch((error) => {
+        let cause = error.message;
+        if ((error as ApiError).errors != undefined) {
+          cause = (error as ApiError).errors.map((e) => '\n ' + e.detail);
+        }
         this.snackBar.open(
-          'Failed to ' + verb + ' ' + this.objectName + ': ' + error.message,
+          'Failed to ' + verb + ' ' + this.objectName + ': ' + cause,
           '',
           {
             horizontalPosition: 'end',

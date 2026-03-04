@@ -49,7 +49,7 @@ export abstract class DocumentTableComponent implements OnInit {
         });
       })
       .catch((err) => {
-        if (err instanceof ApiError) {
+        if ((err as ApiError).errors != undefined) {
           for (const oneError of (err as ApiError).errors) {
             this.snackBar.open(
               oneError.title ? oneError.title : 'Error occurred',

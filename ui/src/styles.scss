@@ -22,6 +22,7 @@ body {
   &.error-snackbar {
     .mat-mdc-snackbar-surface {
       background-color: var(--mat-sys-error);
+      white-space: pre-wrap;
     }
   }
 }
@@ -30,6 +31,7 @@ body {
   &.success-snackbar {
     .mat-mdc-snackbar-surface {
       background-color: var(--mat-sys-primary);
+      white-space: pre-wrap;
     }
   }
 }
