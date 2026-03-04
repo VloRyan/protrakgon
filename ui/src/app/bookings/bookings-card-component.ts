@@ -36,7 +36,11 @@ import {
   FetchOpts,
   findInclude,
 } from '@vloryan/ts-jsonapi-form/jsonapi';
-import { formatDateString, joinPath } from '@vloryan/ts-jsonapi-form/functions';
+import {
+  formatDateString,
+  joinPath,
+  toLocaleDateString,
+} from '@vloryan/ts-jsonapi-form/functions';
 import { FormsModule } from '@angular/forms';
 
 import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
@@ -179,7 +183,7 @@ export interface ActivitySummary {
                 <th mat-header-cell *matHeaderCellDef>Amount/Duration</th>
                 <td mat-cell *matCellDef="let item">
                   @let activity = findActivity(item);
-                  @if (activity?.attributes!['billableAmountUnit']! != 2) {
+                  @if (activity?.attributes!['unit']! == 0) {
                     {{
                       formatBookingSlotDuration(
                         item.attributes.start,
@@ -283,7 +287,6 @@ export class BookingsCardComponent extends DocumentTableComponent {
   csvDownloadLink = signal('');
   router: Router = inject(Router);
   readonly dialog = inject(MatDialog);
-  protected readonly event = event;
 
   constructor() {
     super('Booking');
@@ -317,24 +320,22 @@ export class BookingsCardComponent extends DocumentTableComponent {
     });
 
     let currentGroup = {
-      caption: new Date(
-        data[0]!.attributes!['start']! as string,
-      ).toLocaleDateString(),
+      caption: toLocaleDateString(data[0]!.attributes!['start']! as string),
       data: [] as ActivitySummary[],
     } satisfies Group;
 
     const rows: (Group | ResourceObject)[] = [currentGroup];
     for (const item of data) {
-      const startDate = new Date(
+      const startDate = toLocaleDateString(
         item!.attributes!['start']! as string,
-      ).toLocaleDateString();
+      );
 
       const activityId = item.relationships!['activity']!
         .data as ResourceIdentifierObject;
       const activity = findInclude(activityId, doc!.included ?? []);
 
       const amountSum =
-        activity?.attributes!['billableAmountUnit'] != 2
+        activity?.attributes!['unit'] == 0
           ? this.calcDurationInMinutes(
               item.attributes!['start'] as string,
               item.attributes!['end'] as string | undefined,
@@ -368,7 +369,7 @@ export class BookingsCardComponent extends DocumentTableComponent {
             name: activity?.attributes!['name'] as string,
             icon: activity?.attributes!['icon'] as string,
             amountSum: amountSum,
-            amountUnit: activity?.attributes!['billableAmountUnit'] as number,
+            amountUnit: activity?.attributes!['unit'] as number,
           } satisfies ActivitySummary);
         }
       }
@@ -389,8 +390,13 @@ export class BookingsCardComponent extends DocumentTableComponent {
     if (!value) {
       return null;
     }
-    const date = new Date(value);
-    return date.toLocaleTimeString().substring(0, 5);
+    return new Date(value)
+      .toLocaleTimeString(void 0, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+      .substring(0, 5);
   }
 
   findActivity(object: ResourceObject) {

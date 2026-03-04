@@ -15,6 +15,7 @@ import {
 import { DocumentFormComponent } from '../document-form/document-form-component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
+import { asIsoDataString } from '../functions/date';
 
 @Component({
   selector: 'app-booking-detail-component',
@@ -71,7 +72,7 @@ import { FormsModule } from '@angular/forms';
               [style.width.%]="19"
               [style.padding-right.%]="1"
             >
-              <mat-label> Date </mat-label>
+              <mat-label> Date</mat-label>
               <input
                 #dateField
                 matInput
@@ -86,18 +87,14 @@ import { FormsModule } from '@angular/forms';
               />
             </mat-form-field>
 
-            @if (this.billableAmountUnit() != 2) {
+            @if (this.unit() == 0) {
               <mat-form-field floatLabel="always" [style.width.%]="15">
-                <mat-label> Start </mat-label>
+                <mat-label> Start</mat-label>
                 <input
                   matInput
                   name="start"
                   type="time"
-                  [defaultValue]="
-                    this.formValue('start')
-                      ? formValueAsTime('start')
-                      : nowAsTime()
-                  "
+                  [defaultValue]="formValueAsLocalTime('start')"
                   (input)="setRelativeTime($event, dateField.value)"
                 />
               </mat-form-field>
@@ -107,7 +104,7 @@ import { FormsModule } from '@angular/forms';
                   matInput
                   name="end"
                   type="time"
-                  [defaultValue]="formValueAsTime('end')"
+                  [defaultValue]="formValueAsLocalTime('end', null)"
                   (input)="setRelativeTime($event, dateField.value)"
                 />
               </mat-form-field>
@@ -136,7 +133,7 @@ export class BookingDetailComponent extends DocumentFormComponent {
   activitySelect = new MatSelect();
   activitiesLoaded = signal<boolean>(false);
   activities: ResourceObject[] = [];
-  billableAmountUnit = signal<number>(0);
+  unit = signal<number>(0);
   route: ActivatedRoute = inject(ActivatedRoute);
   jsonApiService: JsonApiService = inject(JsonApiService);
 
@@ -147,8 +144,7 @@ export class BookingDetailComponent extends DocumentFormComponent {
     this.baseApiUrl = 'project/' + projectId + '/booking';
   }
 
-  override ngOnInit() {
-    super.ngOnInit();
+  override afterLoadForm() {
     const projectId = this.route.snapshot.params['project-id'];
     this.jsonApiService.GetProjectActivities(projectId).then((doc) => {
       const theDoc = doc ? doc : null;
@@ -163,17 +159,18 @@ export class BookingDetailComponent extends DocumentFormComponent {
       let selectedActivity = this.findActivity(selectedActivityId);
       this.activitySelect.value =
         selectedActivity != undefined ? selectedActivity.id : null;
-      this.billableAmountUnit.set(
+      this.unit.set(
         selectedActivity != undefined
-          ? (selectedActivity.attributes!['billableAmountUnit'] as number)
+          ? (selectedActivity.attributes!['unit'] as number)
           : 0,
       );
 
       // set default value
-      if (this.form()?.getValue('activity') == null) {
-        let newForm = this.form()!;
-        newForm.setValue('activity', selectedActivity as unknown as ObjectLike);
-        this.form.set(newForm);
+      if (!this.form()?.getValue('activity')) {
+        this.form()?.setValue(
+          'activity',
+          selectedActivity as unknown as ObjectLike,
+        );
       }
     });
   }
@@ -187,32 +184,17 @@ export class BookingDetailComponent extends DocumentFormComponent {
     this.form()?.setValue('amount', -1);
   }
 
-  formValueAsLocalDateTime(name: string) {
-    const value = this.formValue(name) as string | undefined;
-    if (!value) {
-      return null;
-    }
-    const date = new Date(value);
-    return (
-      date.toISOString().substring(0, 11) +
-      date.toLocaleTimeString().substring(0, 5)
-    );
-  }
-
   today() {
-    return new Date().toISOString().substring(0, 10);
-  }
-  nowAsTime() {
-    return new Date().toLocaleTimeString().substring(0, 5);
+    return asIsoDataString(new Date());
   }
 
-  formValueAsTime(name: string) {
+  formValueAsLocalTime(name: string, defaultValue: Date | null = new Date()) {
     const value = this.formValue(name) as string | undefined;
-    if (!value) {
-      return null;
-    }
-    const date = new Date(value);
-    return date.toLocaleTimeString().substring(0, 5);
+    return value
+      ? new Date(value).toTimeString().substring(0, 5)
+      : defaultValue != null
+        ? defaultValue.toTimeString().substring(0, 5)
+        : null;
   }
 
   formValueAsDate(name: string) {
@@ -220,17 +202,14 @@ export class BookingDetailComponent extends DocumentFormComponent {
     if (!value) {
       return null;
     }
-    const date = new Date(value);
-    return date.toISOString().substring(0, 10);
+    return asIsoDataString(new Date(value));
   }
 
   onActivityChanged(ev: Event) {
     this.onInput(ev);
     let activity = this.findActivity((ev.target as HTMLSelectElement).value);
-    this.billableAmountUnit.set(
-      activity != undefined
-        ? (activity.attributes!['billableAmountUnit'] as number)
-        : 0,
+    this.unit.set(
+      activity != undefined ? (activity.attributes!['unit'] as number) : 0,
     );
   }
 

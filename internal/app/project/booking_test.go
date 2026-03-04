@@ -20,10 +20,11 @@ var (
 		Name: "Default",
 	}
 	activityWork = &Activity{
-		ID:                 1,
-		Project:            defaultProject,
-		BillableAmountUnit: BillableAmountUnitPerHour,
-		Name:               "Work",
+		ID:       1,
+		Project:  defaultProject,
+		Unit:     ActivityUnitTime,
+		Billable: true,
+		Name:     "Work",
 	}
 	defaultOpenBooking = &Booking{
 		ID:       2,

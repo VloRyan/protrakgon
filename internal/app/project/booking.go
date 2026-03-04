@@ -161,12 +161,7 @@ func (f *BookingFilter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("description").Like("%" + strings.ToLower(*f.Description) + "%"))
 	}
 	if f.IsBillable != nil {
-		if *f.IsBillable == true {
-			criteria = criteria.And(filter.NewTable("activity").Column("billable_amount_unit").Neq(BillableAmountUnitNone))
-		} else {
-			criteria = criteria.And(filter.NewTable("activity").Column("billable_amount_unit").Eq(BillableAmountUnitNone))
-		}
-
+		criteria = criteria.And(filter.NewTable("activity").Column("billable").Eq(*f.IsBillable))
 	}
 	return criteria
 }
@@ -351,7 +346,7 @@ func (s *bookingService) Save(tx db.Transaction, booking *Booking) error {
 	if err := s.enhanceBooking(tx, booking); err != nil {
 		return err
 	}
-	if booking.Activity.BillableAmountUnit == BillableAmountUnitPerHour && booking.Amount == -1 {
+	if booking.Activity.Unit == ActivityUnitTime && booking.Amount == -1 {
 		openBooking, err := s.GetOpenBooking(tx, booking.Project.ID)
 		if err != nil {
 			return err
@@ -376,8 +371,8 @@ func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) err
 		booking.Start = s.now()
 	}
 
-	switch booking.Activity.BillableAmountUnit {
-	case BillableAmountUnitPerHour:
+	switch booking.Activity.Unit {
+	case ActivityUnitTime:
 		booking.Start = booking.Start.UTC().Truncate(time.Minute)
 		if booking.End == nil && booking.Amount != -1 {
 			end := booking.Start.UTC().Add(time.Minute * time.Duration(booking.Amount)).Truncate(time.Minute)
@@ -387,14 +382,12 @@ func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) err
 			amountInMin := int(booking.End.Sub(booking.Start).Minutes())
 			booking.Amount = amountInMin
 		}
-	case BillableAmountUnitPerDay:
+	case ActivityUnitPiece:
 		booking.Start = booking.Start.UTC().Truncate(time.Hour) // start of day
 		booking.End = nil
 		if booking.Amount < 1 {
 			booking.Amount = 1
 		}
-	case BillableAmountUnitNone:
-		booking.Start = booking.Start.UTC().Truncate(time.Minute)
 	}
 
 	return nil
@@ -430,7 +423,8 @@ func NewBookingRepository() db.CRUDRepository[*Booking, *BookingFilter] {
 				{Name: "name", Alias: "Activity.Name"},
 				{Name: "project_id", Alias: "Activity.Project.ID"},
 				{Name: "description", Alias: "Activity.Description"},
-				{Name: "billable_amount_unit", Alias: "Activity.billable_amount_unit"},
+				{Name: "billable", Alias: "Activity.billable"},
+				{Name: "unit", Alias: "Activity.unit"},
 				{Name: "amount", Alias: "Activity.Amount"},
 				{Name: "icon", Alias: "Activity.Icon"},
 			},

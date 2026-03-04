@@ -1,8 +1,17 @@
-import {Component, inject, input} from '@angular/core';
-import {MatCard, MatCardContent, MatCardHeader, MatCardTitle,} from '@angular/material/card';
-import {JsonApiService} from '../json-api.service';
-import {CollectionResourceDoc, Document as ApiDocument, PrimaryData,} from '@vloryan/ts-jsonapi-form/jsonapi/model';
-import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import { Component, inject, input } from '@angular/core';
+import {
+  MatCard,
+  MatCardContent,
+  MatCardHeader,
+  MatCardTitle,
+} from '@angular/material/card';
+import { JsonApiService } from '../json-api.service';
+import {
+  CollectionResourceDoc,
+  Document as ApiDocument,
+  PrimaryData,
+} from '@vloryan/ts-jsonapi-form/jsonapi/model';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
   MatCell,
   MatCellDef,
@@ -15,10 +24,10 @@ import {
   MatRowDef,
   MatTable,
 } from '@angular/material/table';
-import {MatButton, MatMiniFabButton} from '@angular/material/button';
-import {RouterLink} from '@angular/router';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {DocumentTableComponent} from '../document-form/document-table-component';
+import { MatButton, MatMiniFabButton } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { DocumentTableComponent } from '../document-form/document-table-component';
 
 @Component({
   selector: 'app-activities-card-component',
@@ -76,9 +85,11 @@ import {DocumentTableComponent} from '../document-form/document-table-component'
             <ng-container matColumnDef="billable">
               <th mat-header-cell *matHeaderCellDef>Billable</th>
               <td mat-cell *matCellDef="let item">
-                @if (item.attributes.billableAmountUnit > 0) {
-                  {{ toCurrency(item.attributes.amount, '€')}}
-                  {{  ' per ' + toAmountUnitCaption(item.attributes.billableAmountUnit) }}
+                @if (item.attributes.billable == true) {
+                  {{ toCurrency(item.attributes.amount, '€') }}
+                  @if (item.attributes.unit == 0) {
+                    per hour
+                  }
                 }
               </td>
             </ng-container>
@@ -142,13 +153,14 @@ export class ActivitiesCardComponent extends DocumentTableComponent {
     );
   }
 
-  toAmountUnitCaption(amountUnit : number):string{
-  switch (amountUnit) {
-    case 1:
-        return "hour";
-    case 2:
-      return "day";
-    default: return "unknown";
+  toAmountUnitCaption(amountUnit: number): string {
+    switch (amountUnit) {
+      case 1:
+        return 'hour';
+      case 2:
+        return 'day';
+      default:
+        return 'unknown';
     }
   }
 

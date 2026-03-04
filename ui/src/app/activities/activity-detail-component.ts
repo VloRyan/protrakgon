@@ -29,7 +29,22 @@ import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
           </mat-form-field>
           <mat-form-field
             floatLabel="always"
-            [style.width.%]="49"
+            [style.width.%]="24"
+            [style.padding-left.%]="1"
+          >
+            <mat-label>Unit</mat-label>
+            <select matNativeControl name="Unit" (input)="onInput($event)">
+              <option value="0" [selected]="formValue('unit') == 0">
+                Time
+              </option>
+              <option value="1" [selected]="formValue('unit') == 1">
+                Piece
+              </option>
+            </select>
+          </mat-form-field>
+          <mat-form-field
+            floatLabel="always"
+            [style.width.%]="24"
             [style.padding-left.%]="1"
           >
             <mat-label>Icon</mat-label>
@@ -46,38 +61,6 @@ import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
             [style.width.%]="49"
             [style.padding-right.%]="1"
           >
-            <mat-label>Billable per</mat-label>
-            <select
-              matNativeControl
-              name="billableAmountUnit"
-              #billableAmountUnitSelect
-              (input)="onInput($event)"
-            >
-              <option
-                value="0"
-                [selected]="formValue('billableAmountUnit') == 0"
-              >
-                None
-              </option>
-              <option
-                value="1"
-                [selected]="formValue('billableAmountUnit') == 1"
-              >
-                Per hour
-              </option>
-              <option
-                value="2"
-                [selected]="formValue('billableAmountUnit') == 2"
-              >
-                Per day
-              </option>
-            </select>
-          </mat-form-field>
-          <mat-form-field
-            floatLabel="always"
-            [style.width.%]="49"
-            [style.padding-left.%]="1"
-          >
             <mat-label>Amount</mat-label>
             <input
               type="number"
@@ -90,6 +73,21 @@ import { SingleResourceDoc } from '@vloryan/ts-jsonapi-form/jsonapi/model';
               "
               (input)="onInput($event)"
             />
+          </mat-form-field>
+          <mat-form-field
+            floatLabel="always"
+            [style.width.%]="49"
+            [style.padding-left.%]="1"
+          >
+            <mat-label>Billable</mat-label>
+            <select matNativeControl name="Unit" (input)="onInput($event)">
+              <option value="0" [selected]="formValue('unit') == 0">
+                Billable
+              </option>
+              <option value="1" [selected]="formValue('unit') == 1">
+                Not billable
+              </option>
+            </select>
           </mat-form-field>
           <br />
           <mat-form-field floatLabel="always" [style.width.%]="100">

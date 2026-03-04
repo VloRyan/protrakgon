@@ -120,7 +120,7 @@ func toLine(booking *Booking) string {
 		end,
 		booking.Activity.Name,
 		asString(booking.Description),
-		strconv.FormatInt(int64(booking.Activity.BillableAmountUnit), 10),
+		strconv.FormatBool(booking.Activity.Billable),
 		strconv.FormatFloat(booking.Activity.Amount, 'f', 2, 64),
 	})
 }

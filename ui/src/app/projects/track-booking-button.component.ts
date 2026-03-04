@@ -123,7 +123,7 @@ export class TrackBookingButton implements OnInit {
     ev.preventDefault();
     this.isLoading.set(true);
     this.jsonApiService
-      .GetProjectActivities(this.projectId(), { billableAmountUnits: [0, 1] })
+      .GetProjectActivities(this.projectId(), { units: [0] })
       .then((doc) => {
         this.activitiesObjects.set(doc?.data);
         this.isLoading.set(false);

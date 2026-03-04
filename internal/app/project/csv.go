@@ -26,7 +26,7 @@ func WriteAsCSV(writer io.Writer, bookings []*Booking) error {
 			end,
 			booking.Activity.Name,
 			description,
-			strconv.FormatInt(int64(booking.Activity.BillableAmountUnit), 10),
+			strconv.FormatBool(booking.Activity.Billable),
 			strconv.FormatFloat(booking.Activity.Amount, 'f', 2, 64)}
 		if err := csvWriter.Write(data); err != nil {
 			return err
