@@ -134,7 +134,7 @@ func (f *BookingFilter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("amount").Eq(*f.Amount))
 	}
 	if f.Until != nil {
-		fieldFilter := tableFilter.Column("ended_at").AsDate()
+		fieldFilter := tableFilter.Column("started_at").AsDate().WithParamName("booking_started_at_until")
 		switch f.UntilComparator {
 		case CompareOperatorEqual:
 			criteria = criteria.And(fieldFilter.Eq(f.Until, filter.AsDate))
