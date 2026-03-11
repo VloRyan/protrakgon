@@ -15,7 +15,7 @@ import {
 import { DocumentFormComponent } from '../document-form/document-form-component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
-import { asIsoDataString } from '../functions/date';
+import { asIsoDateString } from '../functions/date';
 
 @Component({
   selector: 'app-booking-detail-component',
@@ -185,7 +185,7 @@ export class BookingDetailComponent extends DocumentFormComponent {
   }
 
   today() {
-    return asIsoDataString(new Date());
+    return asIsoDateString(new Date());
   }
 
   formValueAsLocalTime(name: string, defaultValue: Date | null = new Date()) {
@@ -202,7 +202,7 @@ export class BookingDetailComponent extends DocumentFormComponent {
     if (!value) {
       return null;
     }
-    return asIsoDataString(new Date(value));
+    return asIsoDateString(new Date(value));
   }
 
   onActivityChanged(ev: Event) {

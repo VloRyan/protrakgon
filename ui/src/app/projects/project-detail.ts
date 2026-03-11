@@ -25,6 +25,7 @@ import {
   FetchOpts,
 } from '@vloryan/ts-jsonapi-form/jsonapi/';
 import { DocumentFormComponent } from '../document-form/document-form-component';
+import { asIsoDateString } from '../functions/date';
 
 @Component({
   selector: 'app-project-detail',
@@ -99,9 +100,7 @@ import { DocumentFormComponent } from '../document-form/document-form-component'
     </mat-card>
     @if (form() != null) {
       <br />
-      <app-activities-card-component
-        [projectId]="projectId()"
-      ></app-activities-card-component>
+      <app-activities-card-component [projectId]="projectId()" />
       <br />
       <app-bookings-card-component
         [projectId]="projectId()"
@@ -153,14 +152,27 @@ export class ProjectDetail extends DocumentFormComponent {
   }
 
   fetchOptsWithFilterAndSort(filter: ObjectLike, sort: string): FetchOpts {
-    return { ...EmptyFetchOpts, filter: filter, sort: sort };
+    return {
+      ...EmptyFetchOpts,
+      page: { offset: 0, limit: -1 },
+      filter: filter,
+      sort: sort,
+    };
   }
 
   bookingsFilter(): ObjectLike {
+    let now = new Date();
+    let firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    let lastDay = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0));
     return this.fetchOpts.filter != undefined &&
       this.fetchOpts.filter['bookings'] != undefined
       ? (this.fetchOpts.filter['bookings'] as ObjectLike)
-      : {};
+      : {
+          from: asIsoDateString(firstDay),
+          fromComparator: 5, // >=
+          until: asIsoDateString(lastDay),
+          untilComparator: 3, // <=
+        };
   }
 
   projectId() {

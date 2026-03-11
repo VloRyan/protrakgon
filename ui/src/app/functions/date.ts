@@ -7,7 +7,7 @@ export abstract class DateUtils {
     return d.toISOString().substring(11, 16);
   }
 }
-export function asIsoDataString(d: Date) {
+export function asIsoDateString(d: Date) {
   return d.toISOString().substring(0, 10);
 }
 export function asIsoTimeString(d: Date) {
