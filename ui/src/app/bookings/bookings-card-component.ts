@@ -252,7 +252,7 @@ export interface ActivitySummary {
                       [icon]="['fas', summary.icon + '']"
                       [title]="summary.name"
                     />
-                    @if (summary.amountUnit != 2) {
+                    @if (summary.amountUnit === 0) {
                       {{ this.formatDuration(summary.amountSum) }}
                     } @else {
                       {{ summary.amountSum }}
@@ -351,6 +351,7 @@ export class BookingsCardComponent extends DocumentTableComponent {
               name: activity?.attributes!['name'] as string,
               icon: activity?.attributes!['icon'] as string,
               amountSum: amountSum,
+              amountUnit: activity?.attributes!['unit'] as number,
             },
           ] as ActivitySummary[],
         } satisfies Group;
