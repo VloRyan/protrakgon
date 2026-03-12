@@ -27,9 +27,9 @@ type Booking struct {
 	ID          int        `json:"id,omitempty"`
 	Project     *Project   `json:"project,omitempty"`
 	Activity    *Activity  `json:"activity,omitempty"`
-	Start       time.Time  `json:"start,omitempty" db:"started_at"`
+	Start       time.Time  `json:"start,omitempty" db:"started_at,unix_timestamp"`
 	Amount      int        `json:"amount,omitempty"`
-	End         *time.Time `json:"end,omitempty" db:"ended_at"`
+	End         *time.Time `json:"end,omitempty" db:"ended_at,unix_timestamp"`
 	Description *string    `json:"description,omitempty"`
 }
 
@@ -114,40 +114,42 @@ func (f *BookingFilter) ToCriteria() filter.Criteria {
 		criteria = criteria.And(tableFilter.Column("activity_id").Eq(*f.ActivityID))
 	}
 	if f.From != nil {
-		fieldFilter := tableFilter.Column("started_at").AsDate()
+		fieldFilter := tableFilter.Column("started_at")
+		unixTimestamp := (*f.From).UTC().Truncate(time.Hour).Unix()
 		switch f.FromComparator {
 		case CompareOperatorEqual:
-			criteria = criteria.And(fieldFilter.Eq(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Eq(unixTimestamp))
 		case CompareOperatorNotEqual:
-			criteria = criteria.And(fieldFilter.Neq(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Neq(unixTimestamp))
 		case CompareOperatorLessThan:
-			criteria = criteria.And(fieldFilter.Lt(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Lt(unixTimestamp))
 		case CompareOperatorLessThanOrEqual:
-			criteria = criteria.And(fieldFilter.LtEq(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.LtEq(unixTimestamp))
 		case CompareOperatorGreaterThan:
-			criteria = criteria.And(fieldFilter.Gt(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Gt(unixTimestamp))
 		case CompareOperatorGreaterThanOrEqual:
-			criteria = criteria.And(fieldFilter.GtEq(f.From, filter.AsDate))
+			criteria = criteria.And(fieldFilter.GtEq(unixTimestamp))
 		}
 	}
 	if f.Amount != nil {
 		criteria = criteria.And(tableFilter.Column("amount").Eq(*f.Amount))
 	}
 	if f.Until != nil {
-		fieldFilter := tableFilter.Column("started_at").AsDate().WithParamName("booking_started_at_until")
+		fieldFilter := tableFilter.Column("started_at").WithParamName("booking_started_at_until")
+		unixTimestamp := (*f.Until).UTC().Truncate(time.Hour).Unix()
 		switch f.UntilComparator {
 		case CompareOperatorEqual:
-			criteria = criteria.And(fieldFilter.Eq(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Eq(unixTimestamp))
 		case CompareOperatorNotEqual:
-			criteria = criteria.And(fieldFilter.Neq(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Neq(unixTimestamp))
 		case CompareOperatorLessThan:
-			criteria = criteria.And(fieldFilter.Lt(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Lt(unixTimestamp))
 		case CompareOperatorLessThanOrEqual:
-			criteria = criteria.And(fieldFilter.LtEq(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.LtEq(unixTimestamp))
 		case CompareOperatorGreaterThan:
-			criteria = criteria.And(fieldFilter.Gt(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.Gt(unixTimestamp))
 		case CompareOperatorGreaterThanOrEqual:
-			criteria = criteria.And(fieldFilter.GtEq(f.Until, filter.AsDate))
+			criteria = criteria.And(fieldFilter.GtEq(unixTimestamp))
 		}
 	}
 	if f.IsOpen != nil {
@@ -359,8 +361,7 @@ func (s *bookingService) Save(tx db.Transaction, booking *Booking) error {
 }
 func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) error {
 	var err error
-	booking.Activity, err = s.activityService.GetByID(tx, booking.Activity.ID)
-	if err != nil {
+	if booking.Activity, err = s.activityService.GetByID(tx, booking.Activity.ID); err != nil {
 		return err
 	}
 	if booking.Activity == nil {

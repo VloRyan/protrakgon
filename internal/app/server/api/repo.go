@@ -153,7 +153,6 @@ func (r *repo[T, F]) Save(tx db.Transaction, item T) error {
 	idHlp := newIdHelper(item)
 	if idHlp.GetID() == 0 {
 		stmt := r.statements[statementInsert]
-
 		result, err := tx.Exec(stmt, item)
 		if err != nil {
 			return err
@@ -164,20 +163,19 @@ func (r *repo[T, F]) Save(tx db.Transaction, item T) error {
 		}
 		idHlp.SetID(int(id))
 		return nil
-	} else {
-		stmt := r.statements[statementUpdate]
+	}
 
-		result, err := tx.Exec(stmt, item)
-		if err != nil {
-			return err
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if affected == 0 {
-			return errors.New("update failed: 0 rows affected")
-		}
+	stmt := r.statements[statementUpdate]
+	result, err := tx.Exec(stmt, item)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("update failed: 0 rows affected")
 	}
 	return nil
 }

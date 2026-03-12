@@ -8,7 +8,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.11.1
-	github.com/vloryan/go-libs v0.0.0-20260310095554-666d099b28c1
+	github.com/vloryan/go-libs v0.0.0-20260312070829-255938645985
 	github.com/vloryan/goltmux v0.0.0-20250616121411-547ebefff060
 )
 
