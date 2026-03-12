@@ -8,7 +8,7 @@ import (
 )
 
 func ParseBookings(text string) ([]Booking, error) {
-	var lines = strings.Split(text, "\n")
+	lines := strings.Split(text, "\n")
 	bookings := make([]Booking, 0, len(lines))
 	lineCount := 0
 	for _, line := range lines {
@@ -24,7 +24,7 @@ func ParseBookings(text string) ([]Booking, error) {
 }
 
 func ParseBooking(csv string) (Booking, error) {
-	var values = strings.Split(csv, "\t")
+	values := strings.Split(csv, "\t")
 	if len(values) != 5 {
 		return Booking{}, errors.New("wrong number of values")
 	}

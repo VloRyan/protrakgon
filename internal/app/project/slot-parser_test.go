@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseBookings(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		text    string
@@ -24,7 +23,8 @@ func TestParseBookings(t *testing.T) {
 			Start:       testhelper.ParseTime(nil, "2026-01-02T20:15:00Z"),
 			End:         testhelper.Ptr(testhelper.ParseTime(nil, "2026-01-02T20:30:00Z")),
 			Description: testhelper.Ptr("test description"),
-		}}}, {
+		}},
+	}, {
 		name: "multi line",
 		text: "2026-01-02\t20:15\t20:30\tTestActivity\ttest description\n" +
 			"2026-01-03\t10:15\t10:30\tTestActivity2\ttest description2",
@@ -42,7 +42,8 @@ func TestParseBookings(t *testing.T) {
 			Start:       testhelper.ParseTime(nil, "2026-01-03T10:15:00Z"),
 			End:         testhelper.Ptr(testhelper.ParseTime(nil, "2026-01-03T10:30:00Z")),
 			Description: testhelper.Ptr("test description2"),
-		}}}}
+		}},
+	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ParseBookings(tt.text)

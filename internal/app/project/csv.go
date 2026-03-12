@@ -21,13 +21,15 @@ func WriteAsCSV(writer io.Writer, bookings []*Booking) error {
 		if booking.Description != nil {
 			description = *booking.Description
 		}
-		data := []string{strconv.Itoa(booking.ID),
+		data := []string{
+			strconv.Itoa(booking.ID),
 			booking.Start.Format(time.RFC3339),
 			end,
 			booking.Activity.Name,
 			description,
 			strconv.FormatBool(booking.Activity.Billable),
-			strconv.FormatFloat(booking.Activity.Amount, 'f', 2, 64)}
+			strconv.FormatFloat(booking.Activity.Amount, 'f', 2, 64),
+		}
 		if err := csvWriter.Write(data); err != nil {
 			return err
 		}

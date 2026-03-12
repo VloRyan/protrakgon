@@ -95,6 +95,7 @@ func (s *Booking) Validate() error {
 
 	return nil
 }
+
 func dateSame(t1 time.Time, t2 time.Time) bool {
 	return t1.Year() == t2.Year() &&
 		t1.YearDay() == t2.YearDay() &&
@@ -274,7 +275,7 @@ func (h *BookingHandler) BulkImport(writer http.ResponseWriter, req *http.Reques
 		_, _ = writer.Write([]byte(err.Error()))
 		return
 	}
-	var bodyObject = struct {
+	bodyObject := struct {
 		Lines []string
 	}{}
 	if err := json.Unmarshal(body, &bodyObject); err != nil {
@@ -290,7 +291,7 @@ func (h *BookingHandler) BulkImport(writer http.ResponseWriter, req *http.Reques
 		booking, err := ParseBooking(line)
 		if err != nil {
 			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte(fmt.Sprintf("error parsing bookings at line %d: %s", no, err.Error())))
+			_, _ = fmt.Fprintf(writer, "error parsing bookings at line %d: %s", no, err.Error())
 			return
 		}
 		bookings = append(bookings, &booking)
@@ -371,6 +372,7 @@ func (s *bookingService) Save(tx db.Transaction, booking *Booking) error {
 	}
 	return s.CRUDService.Save(tx, booking)
 }
+
 func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) error {
 	var err error
 	if booking.Activity, err = s.activityService.GetByID(tx, booking.Activity.ID); err != nil {
