@@ -246,6 +246,14 @@ func TestDefaultService_GetOpenBooking(t *testing.T) {
 	}
 }
 
+func timeZone(name string) *time.Location {
+	t, err := time.LoadLocation(name)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
 func TestDefaultService_Save(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -322,6 +330,35 @@ func TestDefaultService_Save(t *testing.T) {
 			End:      testhelper.Ptr(testhelper.FixedNow.Add(48 * time.Hour)),
 		},
 		wantErr: ErrBookingEndsOnDifferentDay,
+	}, {
+		name:  "GIVEN booking with end on different day only in UTC THEN save booking",
+		given: scenario{activities: []*Activity{activityWork}},
+		booking: &Booking{
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    time.Date(2026, 3, 2, 0, 0, 0, 0, timeZone("Europe/Berlin")),                 // UTC 23:00 on 2026-03-01
+			End:      testhelper.Ptr(time.Date(2026, 3, 2, 1, 0, 0, 0, timeZone("Europe/Berlin"))), // UTC 00:00 on 2026-03-02
+			Amount:   -1,
+		},
+		want: []*Booking{{
+			ID:       1,
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    time.Date(2026, 3, 2, 0, 0, 0, 0, timeZone("Europe/Berlin")),
+			End:      testhelper.Ptr(time.Date(2026, 3, 2, 1, 0, 0, 0, timeZone("Europe/Berlin"))),
+			Amount:   60,
+		}},
+	}, {
+		name:  "GIVEN booking with different timezones THEN throw differentTimezones",
+		given: scenario{activities: []*Activity{activityWork}},
+		booking: &Booking{
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC),
+			End:      testhelper.Ptr(time.Date(2026, 3, 2, 1, 0, 0, 0, timeZone("Europe/Berlin"))),
+			Amount:   -1,
+		},
+		wantErr: ErrDifferentTimezones,
 	}, {
 		name: "GIVEN booking with unknown activity THEN throw unknownActivity",
 		booking: &Booking{

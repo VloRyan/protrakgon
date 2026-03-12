@@ -74,10 +74,15 @@ func (s *Booking) Validate() error {
 	}
 
 	if s.End != nil {
+		_, tsStart := s.Start.Zone()
+		_, tsEnd := s.End.Zone()
+		if tsStart != tsEnd {
+			return ErrDifferentTimezones
+		}
 		if s.Start.After(*s.End) {
 			return ErrBookingEndsBeforeStart
 		}
-		if s.Start.Truncate(24*time.Hour) != s.End.Truncate(24*time.Hour) {
+		if !dateSame(s.Start, *s.End) {
 			return ErrBookingEndsOnDifferentDay
 		}
 		if s.Amount != -1 {
@@ -89,6 +94,12 @@ func (s *Booking) Validate() error {
 	}
 
 	return nil
+}
+func dateSame(t1 time.Time, t2 time.Time) bool {
+	return t1.Year() == t2.Year() &&
+		t1.YearDay() == t2.YearDay() &&
+		t1.Month() == t2.Month() &&
+		t1.Day() == t2.Day()
 }
 
 type BookingFilter struct {
@@ -185,6 +196,7 @@ var (
 	ErrBookingEndsOnDifferentDay = errors.New("booking ends on different day")
 	ErrUnknownActivity           = errors.New("unknown activity")
 	ErrAmountDiffToEnd           = errors.New("booking amount differs to duration end-start")
+	ErrDifferentTimezones        = errors.New("booking start and end have different timezones")
 )
 
 type BookingHandler struct {
@@ -374,9 +386,9 @@ func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) err
 
 	switch booking.Activity.Unit {
 	case ActivityUnitTime:
-		booking.Start = booking.Start.UTC().Truncate(time.Minute)
+		booking.Start = booking.Start.Truncate(time.Minute)
 		if booking.End == nil && booking.Amount != -1 {
-			end := booking.Start.UTC().Add(time.Minute * time.Duration(booking.Amount)).Truncate(time.Minute)
+			end := booking.Start.Add(time.Minute * time.Duration(booking.Amount)).Truncate(time.Minute)
 			booking.End = &end
 		}
 		if booking.End != nil && booking.Amount == -1 {
@@ -384,7 +396,7 @@ func (s *bookingService) enhanceBooking(tx db.Transaction, booking *Booking) err
 			booking.Amount = amountInMin
 		}
 	case ActivityUnitPiece:
-		booking.Start = booking.Start.UTC().Truncate(time.Hour) // start of day
+		booking.Start = booking.Start.Truncate(time.Hour) // start of day
 		booking.End = nil
 		if booking.Amount < 1 {
 			booking.Amount = 1
