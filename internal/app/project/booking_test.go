@@ -377,6 +377,24 @@ func TestDefaultService_Save(t *testing.T) {
 			Amount:   120,
 		},
 		wantErr: ErrAmountDiffToEnd,
+	}, {
+		name:  "GIVEN booking which ends on next day at exact midnight THEN save booking",
+		given: scenario{activities: []*Activity{activityWork}},
+		booking: &Booking{
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    testhelper.FixedNow,
+			End:      testhelper.Ptr(testhelper.FixedNow.Truncate(24 * time.Hour).Add(24 * time.Hour)),
+			Amount:   -1,
+		},
+		want: []*Booking{{
+			ID:       1,
+			Project:  defaultProject,
+			Activity: activityWork,
+			Start:    testhelper.FixedNow.Truncate(time.Minute),
+			End:      testhelper.Ptr(testhelper.FixedNow.Truncate(24 * time.Hour).Add(24 * time.Hour)),
+			Amount:   207,
+		}},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

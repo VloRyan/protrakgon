@@ -16,6 +16,7 @@ import { DocumentFormComponent } from '../document-form/document-form-component'
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
 import { formatInTimeZone } from 'date-fns-tz';
+import { format } from 'date-fns';
 
 @Component({
   selector: 'app-booking-detail-component',
@@ -107,7 +108,7 @@ import { formatInTimeZone } from 'date-fns-tz';
                   name="end"
                   type="time"
                   [defaultValue]="formValueAsLocalTime('end', null)"
-                  (input)="setRelativeTime($event, dateField.value)"
+                  (input)="setRelativeTime($event, dateField.value, false)"
                 />
               </mat-form-field>
             }
@@ -197,9 +198,18 @@ export class BookingDetailComponent extends DocumentFormComponent {
     });
   }
 
-  setRelativeTime(ev: Event, atDate: string) {
+  setRelativeTime(
+    ev: Event,
+    atDate: string,
+    midnightOnSameDay: boolean = true,
+  ) {
     let element = ev.target as HTMLInputElement;
     let field = element.name;
+    if (element.value == '00:00' && !midnightOnSameDay) {
+      let d = new Date(atDate);
+      d.setDate(d.getDate() + 1);
+      atDate = format(d, 'yyyy-MM-dd');
+    }
     this.form()?.setValue(
       field,
       formatInTimeZone(

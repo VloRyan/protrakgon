@@ -82,7 +82,7 @@ func (s *Booking) Validate() error {
 		if s.Start.After(*s.End) {
 			return ErrBookingEndsBeforeStart
 		}
-		if !dateSame(s.Start, *s.End) {
+		if !isSameDay(s.Start, *s.End) && !isNextMidnight(s.Start, *s.End) {
 			return ErrBookingEndsOnDifferentDay
 		}
 		if s.Amount != -1 {
@@ -96,11 +96,16 @@ func (s *Booking) Validate() error {
 	return nil
 }
 
-func dateSame(t1 time.Time, t2 time.Time) bool {
+func isSameDay(t1 time.Time, t2 time.Time) bool {
 	return t1.Year() == t2.Year() &&
-		t1.YearDay() == t2.YearDay() &&
-		t1.Month() == t2.Month() &&
-		t1.Day() == t2.Day()
+		t1.YearDay() == t2.YearDay()
+}
+
+func isNextMidnight(base time.Time, check time.Time) bool {
+	return base.Year() == check.Year() &&
+		base.YearDay()+1 == check.YearDay() &&
+		check.Hour() == 0 &&
+		check.Minute() == 0
 }
 
 type BookingFilter struct {
