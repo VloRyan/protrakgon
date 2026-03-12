@@ -86,7 +86,7 @@ import { format } from 'date-fns';
                     ? formValueAsDate('start')
                     : todayString()
                 "
-                (input)="onInput($event)"
+                (input)="onDateInput($event)"
               />
             </mat-form-field>
 
@@ -107,7 +107,7 @@ import { format } from 'date-fns';
                   matInput
                   name="end"
                   type="time"
-                  [defaultValue]="formValueAsLocalTime('end', null)"
+                  [defaultValue]="formValueAsLocalTime('end')"
                   (input)="setRelativeTime($event, dateField.value, false)"
                 />
               </mat-form-field>
@@ -177,14 +177,25 @@ export class BookingDetailComponent extends DocumentFormComponent {
       }
 
       // setting dates to local timezone
-      this.form()?.setValue(
-        'start',
-        formatInTimeZone(
-          this.form()?.getValue('start') as string,
-          Intl.DateTimeFormat().resolvedOptions().timeZone,
-          "yyyy-MM-dd'T'HH:mm:ssXXX",
-        ),
-      );
+      if (this.form()?.getValue('start')) {
+        this.form()?.setValue(
+          'start',
+          formatInTimeZone(
+            this.form()?.getValue('start') as string,
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+          ),
+        );
+      } else {
+        this.form()?.setValue(
+          'start',
+          formatInTimeZone(
+            new Date(),
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+          ),
+        );
+      }
       if (this.form()?.getValue('end')) {
         this.form()?.setValue(
           'end',
@@ -203,6 +214,8 @@ export class BookingDetailComponent extends DocumentFormComponent {
     atDate: string,
     midnightOnSameDay: boolean = true,
   ) {
+    ev.stopPropagation();
+    ev.preventDefault();
     let element = ev.target as HTMLInputElement;
     let field = element.name;
     if (element.value == '00:00' && !midnightOnSameDay) {
@@ -221,6 +234,24 @@ export class BookingDetailComponent extends DocumentFormComponent {
     this.form()?.setValue('amount', -1);
   }
 
+  onDateInput(ev: Event) {
+    ev.stopPropagation();
+    ev.preventDefault();
+    let date = (ev.target as HTMLInputElement).value;
+    this.form()?.setValue(
+      'start',
+      date + (this.form()?.getValue('start') as string).substring(10),
+    );
+    if (this.form()?.getValue('end')) {
+      let endTime = (this.form()?.getValue('end') as string).substring(10);
+      if (endTime.startsWith('T00:00')) {
+        let d = new Date(date);
+        date = format(d.setDate(d.getDate() + 1), 'yyyy-MM-dd');
+      }
+      this.form()?.setValue('end', date + endTime);
+    }
+  }
+
   todayString() {
     return formatInTimeZone(
       new Date(),
@@ -229,9 +260,9 @@ export class BookingDetailComponent extends DocumentFormComponent {
     );
   }
 
-  formValueAsLocalTime(name: string, defaultValue: Date | null = new Date()) {
+  formValueAsLocalTime(name: string) {
     const value = this.formValue(name) as string | undefined;
-    let d = value ? value : defaultValue;
+    let d = value ? value : null;
     if (!d) {
       return null;
     }
