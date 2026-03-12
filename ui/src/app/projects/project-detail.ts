@@ -25,7 +25,7 @@ import {
   FetchOpts,
 } from '@vloryan/ts-jsonapi-form/jsonapi/';
 import { DocumentFormComponent } from '../document-form/document-form-component';
-import { asIsoDateString } from '../functions/date';
+import { format } from 'date-fns';
 
 @Component({
   selector: 'app-project-detail',
@@ -168,9 +168,9 @@ export class ProjectDetail extends DocumentFormComponent {
       this.fetchOpts.filter['bookings'] != undefined
       ? (this.fetchOpts.filter['bookings'] as ObjectLike)
       : {
-          from: asIsoDateString(firstDay),
+          from: format(firstDay, 'yyyy-MM-dd'),
           fromComparator: 5, // >=
-          until: asIsoDateString(lastDay),
+          until: format(lastDay, 'yyyy-MM-dd'),
           untilComparator: 3, // <=
         };
   }

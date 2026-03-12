@@ -15,7 +15,7 @@ import {
 import { DocumentFormComponent } from '../document-form/document-form-component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
-import { asIsoDateString } from '../functions/date';
+import { formatInTimeZone } from 'date-fns-tz';
 
 @Component({
   selector: 'app-booking-detail-component',
@@ -72,7 +72,7 @@ import { asIsoDateString } from '../functions/date';
               [style.width.%]="19"
               [style.padding-right.%]="1"
             >
-              <mat-label> Date</mat-label>
+              <mat-label>Date</mat-label>
               <input
                 #dateField
                 matInput
@@ -81,7 +81,9 @@ import { asIsoDateString } from '../functions/date';
                 min="2026-01-01"
                 max="2026-12-31"
                 [defaultValue]="
-                  this.formValue('start') ? formValueAsDate('start') : today()
+                  this.formValue('start')
+                    ? formValueAsDate('start')
+                    : todayString()
                 "
                 (input)="onInput($event)"
               />
@@ -172,29 +174,62 @@ export class BookingDetailComponent extends DocumentFormComponent {
           selectedActivity as unknown as ObjectLike,
         );
       }
+
+      // setting dates to local timezone
+      this.form()?.setValue(
+        'start',
+        formatInTimeZone(
+          this.form()?.getValue('start') as string,
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+          "yyyy-MM-dd'T'HH:mm:ssXXX",
+        ),
+      );
+      if (this.form()?.getValue('end')) {
+        this.form()?.setValue(
+          'end',
+          formatInTimeZone(
+            this.form()?.getValue('end') as string,
+            Intl.DateTimeFormat().resolvedOptions().timeZone,
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+          ),
+        );
+      }
     });
   }
 
   setRelativeTime(ev: Event, atDate: string) {
     let element = ev.target as HTMLInputElement;
-    let dateStr = atDate + 'T' + element.value + ':00';
-    let date = new Date(dateStr);
     let field = element.name;
-    this.form()?.setValue(field, date.toISOString().slice(0, 19) + 'Z');
+    this.form()?.setValue(
+      field,
+      formatInTimeZone(
+        atDate + 'T' + element.value,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+      ),
+    );
     this.form()?.setValue('amount', -1);
   }
 
-  today() {
-    return asIsoDateString(new Date());
+  todayString() {
+    return formatInTimeZone(
+      new Date(),
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'yyyy-MM-dd',
+    );
   }
 
   formValueAsLocalTime(name: string, defaultValue: Date | null = new Date()) {
     const value = this.formValue(name) as string | undefined;
-    return value
-      ? new Date(value).toTimeString().substring(0, 5)
-      : defaultValue != null
-        ? defaultValue.toTimeString().substring(0, 5)
-        : null;
+    let d = value ? value : defaultValue;
+    if (!d) {
+      return null;
+    }
+    return formatInTimeZone(
+      d,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'HH:mm',
+    );
   }
 
   formValueAsDate(name: string) {
@@ -202,7 +237,11 @@ export class BookingDetailComponent extends DocumentFormComponent {
     if (!value) {
       return null;
     }
-    return asIsoDateString(new Date(value));
+    return formatInTimeZone(
+      value,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'yyyy-MM-dd',
+    );
   }
 
   onActivityChanged(ev: Event) {

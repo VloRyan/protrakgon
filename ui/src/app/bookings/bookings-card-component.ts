@@ -37,7 +37,6 @@ import {
   findInclude,
 } from '@vloryan/ts-jsonapi-form/jsonapi';
 import {
-  formatDateString,
   joinPath,
   toLocaleDateString,
 } from '@vloryan/ts-jsonapi-form/functions';
@@ -449,64 +448,6 @@ export class BookingsCardComponent extends DocumentTableComponent {
       s = insert + s;
     }
     return s;
-  }
-
-  formatTimespan(
-    start: string | undefined = undefined,
-    startComparator: number = Comparator.Eq,
-    end: string | undefined = undefined,
-    endComparator: number = Comparator.Eq,
-    delimiter: string = '...',
-  ) {
-    let span = '';
-    if (start) {
-      switch (startComparator ? startComparator : -1) {
-        case -1:
-        case Comparator.Eq:
-        case Comparator.GtEq:
-          span = formatDateString(start);
-          break;
-        case Comparator.Gt:
-          span = '>' + formatDateString(start);
-          break;
-        case Comparator.NeEq:
-          span = '!' + formatDateString(start);
-          break;
-        case Comparator.Lt:
-          span = '<' + formatDateString(start);
-          break;
-        case Comparator.LtEq:
-          span = '<=' + formatDateString(start);
-          break;
-        default:
-          return startComparator + ' ' + formatDateString(start);
-      }
-    }
-    if (end) {
-      span += (start ? ' ' : '') + delimiter + ' ';
-      switch (endComparator ? endComparator : -1) {
-        case -1:
-        case Comparator.Eq:
-        case Comparator.LtEq:
-          span += formatDateString(end);
-          break;
-        case Comparator.Lt:
-          span += '<' + formatDateString(end);
-          break;
-        case Comparator.NeEq:
-          span += '!' + formatDateString(end);
-          break;
-        case Comparator.Gt:
-          span += '>' + formatDateString(end);
-          break;
-        case Comparator.GtEq:
-          span += '>=' + formatDateString(end);
-          break;
-        default:
-          return endComparator + ' ' + formatDateString(end);
-      }
-    }
-    return span;
   }
 
   onFilterChanged(filter: ObjectLike, filterBar: MatSidenav) {
