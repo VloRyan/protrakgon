@@ -69,6 +69,9 @@ export interface ActivitySummary {
   amountSum: number;
   amountUnit: number;
 }
+interface BookingSummary {
+  activities: ActivitySummary[];
+}
 
 @Component({
   selector: 'app-bookings-card-component',
@@ -114,6 +117,21 @@ export interface ActivitySummary {
       <mat-card appearance="outlined">
         <mat-card-header>
           <mat-card-title>Bookings</mat-card-title>
+          @if (bookingSummary() != undefined) {
+            &nbsp;
+            @for (summary of bookingSummary()?.activities; track $index) {
+              <fa-icon
+                [icon]="['fas', summary.icon + '']"
+                [title]="summary.name"
+                [style.padding-left.px]="10"
+              />
+              @if (summary.amountUnit === 0) {
+                {{ this.formatDuration(summary.amountSum) }}
+              } @else {
+                {{ summary.amountSum }}
+              }
+            }
+          }
           <span class="toolbar-spacer"></span>
           <a
             matButton="outlined"
@@ -180,7 +198,7 @@ export interface ActivitySummary {
               </ng-container>
               <ng-container matColumnDef="amount">
                 <th mat-header-cell *matHeaderCellDef>Amount/Duration</th>
-                <td mat-cell *matCellDef="let item">
+                <td mat-cell *matCellDef="let item" nowrap>
                   @let activity = findActivity(item);
                   @if (activity?.attributes!['unit']! == 0) {
                     {{
@@ -237,12 +255,7 @@ export interface ActivitySummary {
 
               <!-- Group header -->
               <ng-container matColumnDef="groupHeader">
-                <td
-                  colspan="999"
-                  mat-cell
-                  *matCellDef="let group"
-                  style="text-align: center;"
-                >
+                <td colspan="999" mat-cell *matCellDef="let group">
                   <strong [style.padding-right.px]="2">{{
                     group.caption
                   }}</strong>
@@ -286,6 +299,7 @@ export class BookingsCardComponent extends DocumentTableComponent {
   csvDownloadLink = signal('');
   router: Router = inject(Router);
   readonly dialog = inject(MatDialog);
+  bookingSummary = signal<BookingSummary | undefined>(undefined);
 
   constructor() {
     super('Booking');
@@ -306,8 +320,10 @@ export class BookingsCardComponent extends DocumentTableComponent {
   }
 
   override asRows(doc: CollectionResourceDoc | undefined) {
+    let summary: BookingSummary = { activities: [] };
     const data: ResourceObject[] = doc ? doc.data : [];
     if (data.length == 0) {
+      this.bookingSummary.set(undefined);
       this.isLoading.set(false);
       return [];
     }
@@ -340,7 +356,7 @@ export class BookingsCardComponent extends DocumentTableComponent {
               item.attributes!['end'] as string | undefined,
             )
           : (item.attributes!['amount'] as number);
-
+      this.addToSummary(summary.activities, activity!, amountSum);
       if (startDate !== currentGroup.caption) {
         currentGroup = {
           caption: startDate,
@@ -356,26 +372,12 @@ export class BookingsCardComponent extends DocumentTableComponent {
         } satisfies Group;
         rows.push(currentGroup);
       } else {
-        let found = false;
-        for (const summary of currentGroup.data) {
-          if (summary.id == activity?.id) {
-            summary.amountSum += amountSum;
-            found = true;
-          }
-        }
-        if (!found) {
-          currentGroup.data.push({
-            id: activity?.id as string,
-            name: activity?.attributes!['name'] as string,
-            icon: activity?.attributes!['icon'] as string,
-            amountSum: amountSum,
-            amountUnit: activity?.attributes!['unit'] as number,
-          } satisfies ActivitySummary);
-        }
+        this.addToSummary(currentGroup.data, activity!, amountSum);
       }
       rows.push(item);
     }
     this.isLoading.set(false);
+    this.bookingSummary.set(summary);
     return rows;
   }
 
@@ -495,5 +497,28 @@ export class BookingsCardComponent extends DocumentTableComponent {
     id: string,
   ): Promise<Document<PrimaryData> | null> {
     return this.jsonApiService.DeleteBooking(this.projectId(), id);
+  }
+
+  private addToSummary(
+    summaries: ActivitySummary[],
+    activity: ResourceObject,
+    amountSum: number,
+  ) {
+    let found = false;
+    for (const summary of summaries) {
+      if (summary.id == activity?.id) {
+        summary.amountSum += amountSum;
+        found = true;
+      }
+    }
+    if (!found) {
+      summaries.push({
+        id: activity?.id as string,
+        name: activity?.attributes!['name'] as string,
+        icon: activity?.attributes!['icon'] as string,
+        amountSum: amountSum,
+        amountUnit: activity?.attributes!['unit'] as number,
+      } satisfies ActivitySummary);
+    }
   }
 }
