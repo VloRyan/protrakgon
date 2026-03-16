@@ -435,10 +435,8 @@ export class BookingsCardComponent extends DocumentTableComponent {
 
   formatDuration(durationMinutes: number) {
     const minutes = Math.floor(durationMinutes % 60);
-    const hours = Math.floor((durationMinutes % (60 * 24)) / 60);
-    const days = Math.floor(durationMinutes / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(durationMinutes / 60);
     return `
-      ${days > 0 ? this.padLeft(days, 2, '\u00A0') + 'd' : ''}
       ${hours > 0 ? this.padLeft(hours, 2, '\u00A0') + 'h' : ''}
       ${minutes > 0 ? this.padLeft(minutes, 2, '\u00A0') + 'm' : ''}
       `.trim();
