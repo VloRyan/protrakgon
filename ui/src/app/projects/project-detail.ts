@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { MatCard, MatCardContent } from '@angular/material/card';
 import { ActivatedRoute } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -30,8 +29,6 @@ import { format } from 'date-fns';
 @Component({
   selector: 'app-project-detail',
   imports: [
-    MatCard,
-    MatCardContent,
     MatFormFieldModule,
     MatInputModule,
     MatAutocomplete,
@@ -43,64 +40,64 @@ import { format } from 'date-fns';
     BookingsCardComponent,
   ],
   template: `
-    <mat-card appearance="outlined">
-      <mat-card-content>
-        <form #projectForm id="item-form" (submit)="onSubmit($event)">
-          <mat-form-field [style.width.%]="49" [style.padding-right.%]="1">
-            <mat-label>Name</mat-label>
-            <input
-              matInput
-              name="name"
-              [defaultValue]="formValue('name')"
-              (input)="onInput($event)"
-            />
-          </mat-form-field>
-          <mat-form-field [style.width.%]="49" [style.padding-left.%]="1">
-            <mat-label>Client</mat-label>
-            <input
-              matInput
-              placeholder="Choose a client"
-              (keyup)="updateOptions($event)"
-              [matAutocomplete]="auto"
-              [formControl]="clientSearchInput"
-              name="client"
-            />
-          </mat-form-field>
-          <br />
-          <mat-form-field [style.width.%]="100">
-            <mat-label>Description</mat-label>
-            <input
-              matInput
-              name="description"
-              [defaultValue]="formValue('description')"
-              (input)="onInput($event)"
-            />
-          </mat-form-field>
+    <form #projectForm id="item-form" (submit)="onSubmit($event)">
+      <mat-form-field [style.width.%]="49" [style.padding-right.%]="1">
+        <mat-label>Name</mat-label>
+        <input
+          matInput
+          name="name"
+          [defaultValue]="formValue('name')"
+          (input)="onInput($event)"
+        />
+      </mat-form-field>
+      <mat-form-field [style.width.%]="49" [style.padding-left.%]="1">
+        <mat-label>Client</mat-label>
+        <input
+          matInput
+          placeholder="Choose a client"
+          (keyup)="updateOptions($event)"
+          [matAutocomplete]="auto"
+          [formControl]="clientSearchInput"
+          name="client"
+        />
+      </mat-form-field>
+      <br />
+      <mat-form-field [style.width.%]="100">
+        <mat-label>Description</mat-label>
+        <input
+          matInput
+          name="description"
+          [defaultValue]="formValue('description')"
+          (input)="onInput($event)"
+        />
+      </mat-form-field>
 
-          <mat-autocomplete
-            #auto="matAutocomplete"
-            requireSelection
-            [displayWith]="displayFn"
-          >
-            @if (isLoading()) {
-              <mat-option class="is-loading">
-                <mat-spinner diameter="50"></mat-spinner>
-              </mat-option>
-            }
+      <mat-autocomplete
+        #auto="matAutocomplete"
+        requireSelection
+        [displayWith]="displayFn"
+      >
+        @if (isLoading()) {
+          <mat-option class="is-loading">
+            <mat-spinner diameter="50"></mat-spinner>
+          </mat-option>
+        }
 
-            @for (object of filteredObjects; track object.id) {
-              <mat-option [value]="object">
-                <span>{{ object.attributes!['name'] }}</span>
-                <small> | ID: {{ object.id }}</small>
-              </mat-option>
-            }
-          </mat-autocomplete>
-        </form>
-      </mat-card-content>
-    </mat-card>
+        @for (object of filteredObjects; track object.id) {
+          <mat-option [value]="object">
+            <span>{{ object.attributes!['name'] }}</span>
+            <small> | ID: {{ object.id }}</small>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </form>
+
     @if (form() != null) {
       <br />
-      <app-activities-card-component [projectId]="projectId()" />
+      <app-activities-card-component
+        [projectId]="projectId()"
+        [collapsed]="projectId() != ''"
+      />
       <br />
       <app-bookings-card-component
         [projectId]="projectId()"
