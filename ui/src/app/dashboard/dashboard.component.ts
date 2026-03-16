@@ -4,10 +4,43 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { ProjectsWidgetComponent } from './widget/projects-widget.component';
+import { NgComponentOutlet } from '@angular/common';
 
 @Component({
   selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
+  template: `<div class="grid-container">
+    <mat-grid-list cols="2" rowHeight="350px">
+      @for (card of cards; track card) {
+        <mat-grid-tile [colspan]="card.cols" [rowspan]="card.rows">
+          <mat-card class="dashboard-card">
+            <mat-card-header>
+              <mat-card-title>
+                {{ card.title }}
+                <button
+                  [matMenuTriggerFor]="menu"
+                  aria-label="Toggle menu"
+                  class="more-button"
+                  matIconButton
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu" xPosition="before">
+                  <button mat-menu-item>Expand</button>
+                  <button mat-menu-item>Remove</button>
+                </mat-menu>
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="dashboard-card-content">
+              @if (card.content) {
+                <ng-container *ngComponentOutlet="card.content" />
+              }
+            </mat-card-content>
+          </mat-card>
+        </mat-grid-tile>
+      }
+    </mat-grid-list>
+  </div>`,
   styleUrl: './dashboard.component.scss',
   imports: [
     MatGridListModule,
@@ -15,13 +48,17 @@ import { MatCardModule } from '@angular/material/card';
     MatIconModule,
     MatButtonModule,
     MatCardModule,
+    NgComponentOutlet,
   ],
 })
 export class DashboardComponent {
   cards = [
-    { title: 'Open bookings', cols: 2, rows: 1 },
-    { title: 'Card 2', cols: 1, rows: 1 },
-    { title: 'Card 32', cols: 1, rows: 2 },
-    { title: 'Card 4', cols: 1, rows: 1 },
+    {
+      title: 'Projects',
+      cols: 2,
+      rows: 1,
+      content: ProjectsWidgetComponent,
+    },
   ];
+  protected readonly ProjectsWidgetComponent = ProjectsWidgetComponent;
 }
