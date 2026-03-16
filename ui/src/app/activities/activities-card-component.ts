@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, model } from '@angular/core';
 import {
   MatCard,
   MatCardContent,
@@ -55,78 +55,94 @@ import { DocumentTableComponent } from '../document-form/document-table-componen
   template: `
     <mat-card appearance="outlined">
       <mat-card-header>
-        <mat-card-title>Activities</mat-card-title>
-        <span class="toolbar-spacer"></span>
-        <a
-          [routerLink]="['/project', this.projectId(), 'activity', 'new']"
-          matButton="outlined"
-        >
-          <fa-icon [icon]="['fas', 'plus']" />
-        </a>
-      </mat-card-header>
-      <mat-card-content>
-        @if (isLoading()) {
-          <mat-spinner></mat-spinner>
+        <mat-card-title> Activities </mat-card-title>
+        @if (this.collapsed()) {
+          <button mat-button (click)="this.toggleCollapsed()">
+            <fa-icon [icon]="['fas', 'chevron-down']" />
+          </button>
         } @else {
-          <table
-            mat-table
-            class="results-table mat-elevation-z8"
-            [dataSource]="rows()"
+          <button mat-button (click)="this.toggleCollapsed()">
+            <fa-icon [icon]="['fas', 'chevron-up']" />
+          </button>
+          <span class="toolbar-spacer"></span>
+          <a
+            [routerLink]="['/project', this.projectId(), 'activity', 'new']"
+            matButton="outlined"
           >
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>Name</th>
-              <td mat-cell *matCellDef="let item">
-                <fa-icon
-                  [icon]="['fas', item.attributes.icon]"
-                  [style.padding-right.px]="2"
-                />{{ item.attributes.name }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="billable">
-              <th mat-header-cell *matHeaderCellDef>Billable</th>
-              <td mat-cell *matCellDef="let item">
-                @if (item.attributes.billable == true) {
-                  {{ toCurrency(item.attributes.amount, '€') }}
-                  @if (item.attributes.unit == 0) {
-                    per hour
-                  }
-                }
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="description">
-              <th mat-header-cell *matHeaderCellDef>Description</th>
-              <td mat-cell *matCellDef="let item">
-                {{ item.attributes.description }}
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th
-                mat-header-cell
-                *matHeaderCellDef
-                style="text-align: right"
-              ></th>
-              <td
-                class="action-col"
-                mat-cell
-                *matCellDef="let item"
-                style="text-align: right"
-              >
-                <span class="action-spacer"></span>
-                <button matMiniFab (click)="deleteItem($event, item.id)">
-                  <fa-icon [icon]="['fas', 'trash']" />
-                </button>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr
-              mat-row
-              class="row-hover"
-              [routerLink]="['/project', this.projectId(), 'activity', item.id]"
-              *matRowDef="let item; columns: displayedColumns"
-            ></tr>
-          </table>
+            <fa-icon [icon]="['fas', 'plus']" />
+          </a>
         }
-      </mat-card-content>
+      </mat-card-header>
+      @if (!this.collapsed()) {
+        <mat-card-content>
+          @if (isLoading()) {
+            <mat-spinner></mat-spinner>
+          } @else {
+            <table
+              mat-table
+              class="results-table mat-elevation-z8"
+              [dataSource]="rows()"
+            >
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let item">
+                  <fa-icon
+                    [icon]="['fas', item.attributes.icon]"
+                    [style.padding-right.px]="2"
+                  />{{ item.attributes.name }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="billable">
+                <th mat-header-cell *matHeaderCellDef>Billable</th>
+                <td mat-cell *matCellDef="let item">
+                  @if (item.attributes.billable == true) {
+                    {{ toCurrency(item.attributes.amount, '€') }}
+                    @if (item.attributes.unit == 0) {
+                      per hour
+                    }
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef>Description</th>
+                <td mat-cell *matCellDef="let item">
+                  {{ item.attributes.description }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th
+                  mat-header-cell
+                  *matHeaderCellDef
+                  style="text-align: right"
+                ></th>
+                <td
+                  class="action-col"
+                  mat-cell
+                  *matCellDef="let item"
+                  style="text-align: right"
+                >
+                  <span class="action-spacer"></span>
+                  <button matMiniFab (click)="deleteItem($event, item.id)">
+                    <fa-icon [icon]="['fas', 'trash']" />
+                  </button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr
+                mat-row
+                class="row-hover"
+                [routerLink]="[
+                  '/project',
+                  this.projectId(),
+                  'activity',
+                  item.id,
+                ]"
+                *matRowDef="let item; columns: displayedColumns"
+              ></tr>
+            </table>
+          }
+        </mat-card-content>
+      }
     </mat-card>
   `,
   styleUrl: './activities-card-component.scss',
@@ -135,10 +151,14 @@ export class ActivitiesCardComponent extends DocumentTableComponent {
   displayedColumns: string[] = ['name', 'billable', 'description', 'actions'];
   jsonApiService: JsonApiService = inject(JsonApiService);
   projectId = input.required<string>();
+  collapsed = model<boolean>(false);
+
   constructor() {
     super('Activity');
   }
-
+  public toggleCollapsed(): void {
+    this.collapsed.update((value) => !value);
+  }
   toCurrency(num: number | undefined, currency: string): string {
     if (!num) {
       num = 0;
